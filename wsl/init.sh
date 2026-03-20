@@ -12,8 +12,6 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-cd ~
-
 info "Updating package list..."
 apt-get update -y
 
@@ -58,7 +56,7 @@ else
 fi
 
 info "Installing script in order to install Docker"
-info "Please execute the following command to install Docker: 'sudo sh ./get-docker.sh && usermod -aG docker $USER'"
+info "Please execute the following command to install Docker: 'sudo sh ./get-docker.sh && sudo usermod -aG docker $USER'"
 # ref: https://qiita.com/ain1084/items/6cb6d82852c91416ec0e
 curl -fsSL https://get.docker.com -o get-docker.sh
 
