@@ -14,6 +14,7 @@ Return
 Return
 
 ; "ltu" と "q" の切り替え
+; ! laptopだと, ここと上のコメントアウトを削除しないと正常に動作しない. 意味不明. sc, vk指定でも同様な模様. 本当に意味不明
 $q::
     if (toggle_q = 0) {
         Send, ltu
