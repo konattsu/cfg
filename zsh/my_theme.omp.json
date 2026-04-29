@@ -1,0 +1,76 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
+  "version": 4,
+  "final_space": true,
+  "console_title_template": "{{.UserName}}@{{.HostName}} in {{ .PWD }}",
+  "blocks": [
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "segments": [
+        {
+          "type": "session",
+          "style": "powerline",
+          "foreground": "#CDA5FF",
+          "template": "{{ .UserName }}@{{ .HostName }}"
+        },
+        {
+          "type": "path",
+          "style": "powerline",
+          "foreground": "#42FFFF",
+          "template": " <u>`{{ .Path }}`</u>",
+          "options": {
+            "folder_separator_icon": "/",
+            "style": "agnoster"
+          }
+        },
+        {
+          "type": "git",
+          "style": "powerline",
+          "foreground": "#C8C3DC",
+          "template": " {{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} *{{ .Working.String }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} +{{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} stash:{{ .StashCount }}{{ end }} ",
+          "options": {
+            "fetch_status": true,
+            "fetch_upstream_icon": false
+          }
+        },
+        {
+          "type": "os",
+          "style": "powerline",
+          "foreground": "#FFF",
+          "template": " <d>{{ if .WSL }}wsl{{ end }}</d>"
+        },
+        {
+          "type": "time",
+          "style": "powerline",
+          "foreground": "#FFF",
+          "template": " <d>{{ .CurrentDate | date .Format }}</d>"
+        },
+        {
+          "type": "executiontime",
+          "style": "powerline",
+          "foreground": "#FFF",
+          "template": " <d>{{ .FormattedMs }}</d>",
+          "options": {
+            "always_enabled": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "type": "status",
+          "style": "powerline",
+          "template": "{{ if .Error }}<#E6325F>{{ else }}<#2887FF>{{ end }} $</#2887FF>",
+          "options": {
+            "always_enabled": true
+          }
+        }
+      ]
+    }
+  ]
+}
