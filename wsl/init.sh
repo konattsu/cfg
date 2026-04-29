@@ -12,10 +12,10 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-info "Updating package list..."
-apt-get update -y
+info "Updating package list & package..."
+apt-get update -y && apt-get upgrade -y
 
-info "Installing core development tools"
+info "Installing core development tools..."
 apt-get install -y --no-install-recommends \
   build-essential \
   ca-certificates \
@@ -55,7 +55,7 @@ else
   info "cargo is already installed: $(command -v cargo)"
 fi
 
-info "Installing nvm..."
+info "Installing nvm & npm with nvm..."
 if ! command -v nvm >/dev/null 2>&1; then
   # ref: https://github.com/nvm-sh/nvm
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
@@ -64,9 +64,16 @@ if ! command -v nvm >/dev/null 2>&1; then
 else
   info "nvm is already installed: $(command -v nvm)"
 
-info "Installing script in order to install Docker"
-info "Please execute the following command to install Docker: 'sudo sh ./get-docker.sh && sudo usermod -aG docker $USER'"
+info "Installing zsh"
+curl -fsSL -o- https://raw.githubusercontent.com/konattsu/cfg/main/zsh/install.sh | bash
+curl -fsSL -o ~/.zshrc https://raw.githubusercontent.com/konattsu/cfg/main/zsh/zshrc
+
+info "Installing Codex..."
+curl -fsSL -o- https://raw.githubusercontent.com/konattsu/cfg/main/ai/install_codex.sh | bash
+
+info "Installing Docker..."
 # ref: https://qiita.com/ain1084/items/6cb6d82852c91416ec0e
-curl -fsSL https://get.docker.com -o get-docker.sh
+curl -fsSL -o- https://get.docker.com | bash
+info "Please execute the following command: 'sudo usermod -aG docker $USER'"
 
 info "Done."
