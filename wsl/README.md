@@ -20,10 +20,16 @@ chsh -s /bin/zsh
 
 ## keychain
 
+- win側にあるものを`cp`してwsl側に移動した際には, ファイルモードの変更が必須
+  - 秘密鍵: 600
+  - 公開鍵: 644
+
+```bash
+mkdir ~/.ssh
+chmod 700 ~/.ssh
+```
+
 `.bashrc`, `.zshrc`
 ```bash
 eval "$(keychain --eval <秘密鍵へのパス. 複数可>)"
 ```
-
-- win側にあるものを`cp`してwsl側に移動した際には, ファイルモードの変更が必須
-  - chmod type path/to/file
