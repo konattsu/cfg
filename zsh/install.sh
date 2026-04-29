@@ -30,6 +30,7 @@ curl -fsSL https://ohmyposh.dev/install.sh | bash -s
 export PATH="$HOME/.local/bin:$PATH"
 
 mkdir -p ~/.poshthemes
+curl -fsSL -o ~/.poshthemes/my_theme.omp.json https://raw.githubusercontent.com/konattsu/cfg/main/zsh/my_theme.omp.json
 curl -fsSL https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/themes.zip -o /tmp/themes.zip
 unzip -o /tmp/themes.zip -d ~/.poshthemes
 find ~/.poshthemes -name '*.omp.json' -exec chmod u+rw {} +
