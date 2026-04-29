@@ -1,5 +1,13 @@
 # 色々
 
+## execution
+
+```bash
+curl -fsSL -o ~/wsl_init.sh https://raw.githubusercontent.com/konattsu/cfg/refs/heads/main/wsl/init.sh
+chmod +x ~/wsl_init.sh
+sudo ~/wsl_init.sh
+```
+
 ## keychain
 
 `.bashrc`
