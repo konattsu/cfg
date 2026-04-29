@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # 1. apt 更新
 apt-get update
 apt-get upgrade -y
