@@ -50,7 +50,8 @@ fi
 info "Installing Rust + Cargo..."
 if ! command -v cargo >/dev/null 2>&1; then
   # ref: https://rust-lang.org/tools/install
-  printf '1\n' | curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  # ref: https://github.com/rust-lang-deprecated/rustup.sh/issues/83
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 else
   info "cargo is already installed: $(command -v cargo)"
 fi
@@ -63,6 +64,15 @@ info "Installing nvm & npm with nvm..."
 if ! command -v nvm >/dev/null 2>&1; then
   # ref: https://github.com/nvm-sh/nvm
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+
+  export NVM_DIR="$HOME/.nvm"
+  if [ -s "$NVM_DIR/nvm.sh" ]; then
+    . "$NVM_DIR/nvm.sh"
+  else
+    echo "nvm.sh not found: $NVM_DIR/nvm.sh" >&2
+    exit 1
+  fi
+
   nvm install stable --latest-npm
   nvm alias default stable
 else
