@@ -13,10 +13,10 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 info "Updating package list & package..."
-apt-get update -y && apt-get upgrade -y
+sudo apt-get update -y && sudo apt-get upgrade -y
 
 info "Installing core development tools..."
-apt-get install -y --no-install-recommends \
+sudo apt-get install -y --no-install-recommends \
   build-essential \
   ca-certificates \
   curl \

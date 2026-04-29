@@ -3,11 +3,11 @@
 set -euo pipefail
 
 # 1. apt 更新
-apt-get update
-apt-get upgrade -y
+sudo apt-get update
+sudo apt-get upgrade -y
 
 # 2. 必要ツール
-apt-get install -y zsh git curl unzip fontconfig
+sudo apt-get install -y zsh git curl unzip fontconfig
 
 # 3. zsh をデフォルトシェルにする
 chsh -s "$(which zsh)"
