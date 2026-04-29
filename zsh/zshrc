@@ -14,7 +14,7 @@ source $ZSH/oh-my-zsh.sh
 
 # --- Prompt (oh-my-posh) ---
 export PATH="$HOME/.local/bin:$PATH"
-eval "$(oh-my-posh init zsh --config ~/.poshthemes/unicorn.omp.json)"
+eval "$(oh-my-posh init zsh --config ~/.poshthemes/my_theme.omp.json)"
 
 # --- NVM ---
 export NVM_DIR="$HOME/.nvm"
