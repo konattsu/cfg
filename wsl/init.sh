@@ -50,10 +50,14 @@ fi
 info "Installing Rust + Cargo..."
 if ! command -v cargo >/dev/null 2>&1; then
   # ref: https://rust-lang.org/tools/install
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  printf '1\n' | curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 else
   info "cargo is already installed: $(command -v cargo)"
 fi
+
+info "Installing zsh"
+curl -fsSL -o- https://raw.githubusercontent.com/konattsu/cfg/main/zsh/install.sh | bash
+curl -fsSL -o ~/.zshrc https://raw.githubusercontent.com/konattsu/cfg/main/zsh/zshrc
 
 info "Installing nvm & npm with nvm..."
 if ! command -v nvm >/dev/null 2>&1; then
@@ -63,10 +67,7 @@ if ! command -v nvm >/dev/null 2>&1; then
   nvm alias default stable
 else
   info "nvm is already installed: $(command -v nvm)"
-
-info "Installing zsh"
-curl -fsSL -o- https://raw.githubusercontent.com/konattsu/cfg/main/zsh/install.sh | bash
-curl -fsSL -o ~/.zshrc https://raw.githubusercontent.com/konattsu/cfg/main/zsh/zshrc
+fi
 
 info "Installing Codex..."
 curl -fsSL -o- https://raw.githubusercontent.com/konattsu/cfg/main/ai/install_codex.sh | bash
