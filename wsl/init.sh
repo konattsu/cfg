@@ -55,6 +55,15 @@ else
   info "cargo is already installed: $(command -v cargo)"
 fi
 
+info "Installing nvm..."
+if ! command -v nvm >/dev/null 2>&1; then
+  # ref: https://github.com/nvm-sh/nvm
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+  nvm install stable --latest-npm
+  nvm alias default stable
+else
+  info "nvm is already installed: $(command -v nvm)"
+
 info "Installing script in order to install Docker"
 info "Please execute the following command to install Docker: 'sudo sh ./get-docker.sh && sudo usermod -aG docker $USER'"
 # ref: https://qiita.com/ain1084/items/6cb6d82852c91416ec0e
