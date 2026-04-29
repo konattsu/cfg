@@ -7,11 +7,6 @@ info() { echo -e "\033[1;34m[INFO]\033[0m $*"; }
 warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
 error() { echo -e "\033[1;31m[ERROR]\033[0m $*"; }
 
-if [ "$(id -u)" -ne 0 ]; then
-  error "Please run this script as root"
-  exit 1
-fi
-
 info "Updating package list & package..."
 sudo apt-get update -y && sudo apt-get upgrade -y
 
