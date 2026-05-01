@@ -77,7 +77,7 @@ fi
 info "Installing Codex..."
 curl -fsSL -o- https://raw.githubusercontent.com/konattsu/cfg/main/ai/install_codex.sh | bash
 
-info "Installing Devcontainer CLI.."
+info "Installing Devcontainer CLI..."
 npm install -g @devcontainers/cli
 
 info "Installing Docker..."
