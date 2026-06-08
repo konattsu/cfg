@@ -14,7 +14,6 @@ Return
 Return
 
 ; "ltu" と "q" の切り替え
-; ! laptopだと, ここと上のコメントアウトを削除しないと正常に動作しない. 意味不明. sc, vk指定でも同様な模様. 本当に意味不明
 $q::
     if (toggle_q = 0) {
         Send, ltu
@@ -38,67 +37,77 @@ Return
 Return
 
 ; 変換キー（sc079）と矢印キーの割り当て
-; sc079 & j::Send, {Left}
+; sc079 & h::Send, {Left}
+; sc079 & j::Send, {Down}
+; sc079 & k::Send, {Up}
 ; sc079 & l::Send, {Right}
-; sc079 & i::Send, {Up}
-; sc079 & k::Send, {Down}
 
 ; Ctrl + 変換キー + 矢印キーの割り当て
-; ^sc079 & j::Send, ^{Left}
+; ^sc079 & h::Send, ^{Left}
+; ^sc079 & j::Send, ^{Down}
+; ^sc079 & k::Send, ^{Up}
 ; ^sc079 & l::Send, ^{Right}
-; ^sc079 & i::Send, ^{Up}
-; ^sc079 & k::Send, ^{Down}
 ; Return
 
 ; super god ultra shortcut
+sc079 & h::
 sc079 & j::
-sc079 & l::
-sc079 & i::
 sc079 & k::
+sc079 & l::
 sc079 & q::
+sc079 & b::
+sc079 & f::
+sc079 & g::
     ctrl := GetKeyState("Ctrl", "P")
     shift := GetKeyState("Shift", "P")
     if (ctrl && shift) {
         ; Ctrl+Shift+矢印
-        if (A_ThisHotkey = "sc079 & j")
+        if (A_ThisHotkey = "sc079 & h")
             Send, ^+{Left}
+        else if (A_ThisHotkey = "sc079 & j")
+            Send, ^+{Down}
+        else if (A_ThisHotkey = "sc079 & k")
+            Send, ^+{Up}
         else if (A_ThisHotkey = "sc079 & l")
             Send, ^+{Right}
-        else if (A_ThisHotkey = "sc079 & i")
-            Send, ^+{Up}
-        else if (A_ThisHotkey = "sc079 & k")
-            Send, ^+{Down}
     } else if (ctrl) {
         ; Ctrl+矢印
-        if (A_ThisHotkey = "sc079 & j")
+        if (A_ThisHotkey = "sc079 & h")
             Send, ^{Left}
+        else if (A_ThisHotkey = "sc079 & j")
+            Send, ^{Down}
+        else if (A_ThisHotkey = "sc079 & k")
+            Send, ^{Up}
         else if (A_ThisHotkey = "sc079 & l")
             Send, ^{Right}
-        else if (A_ThisHotkey = "sc079 & i")
-            Send, ^{Up}
-        else if (A_ThisHotkey = "sc079 & k")
-            Send, ^{Down}
     } else if (shift) {
         ; Shift+矢印
-        if (A_ThisHotkey = "sc079 & j")
+        if (A_ThisHotkey = "sc079 & h")
             Send, +{Left}
+        else if (A_ThisHotkey = "sc079 & j")
+            Send, +{Down}
+        else if (A_ThisHotkey = "sc079 & k")
+            Send, +{Up}
         else if (A_ThisHotkey = "sc079 & l")
             Send, +{Right}
-        else if (A_ThisHotkey = "sc079 & i")
-            Send, +{Up}
-        else if (A_ThisHotkey = "sc079 & k")
-            Send, +{Down}
+        else if (A_ThisHotkey = "sc079 & g")
+            Send, ^{End}
     } else {
-        ; 通常の矢印
-        if (A_ThisHotkey = "sc079 & j")
+        if (A_ThisHotkey = "sc079 & h")
             Send, {Left}
+        else if (A_ThisHotkey = "sc079 & j")
+            Send, {Down}
+        else if (A_ThisHotkey = "sc079 & k")
+            Send, {Up}
         else if (A_ThisHotkey = "sc079 & l")
             Send, {Right}
-        else if (A_ThisHotkey = "sc079 & i")
-            Send, {Up}
-        else if (A_ThisHotkey = "sc079 & k")
-            Send, {Down}
         else if (A_ThisHotkey = "sc079 & q")
             Send, q
+        else if (A_ThisHotkey = "sc079 & b")
+            Send, {PgUp}
+        else if (A_ThisHotkey = "sc079 & f")
+            Send, {PgDn}
+        else if (A_ThisHotkey = "sc079 & g")
+            Send, ^{Home}
     }
 return
