@@ -1,0 +1,16 @@
+[user]
+        name = konattsu
+        email = 139730998+konattsu@users.noreply.github.com
+        signingkey = <`*.pub`の内容をそのまま張り付ける>
+[init]
+        defaultBranch = main
+[core]
+        autocrlf = false
+[gpg]
+        format = ssh
+[commit]
+        gpgsign = true
+[alias]
+        superlog = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\"
+        superlog3 = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\" -n 3
+        superlog10 = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\" -n 10

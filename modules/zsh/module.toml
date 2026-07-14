@@ -1,0 +1,58 @@
+name = "zsh"
+depends_on = ["core"]
+notes = [
+  "login shell を zsh に変える場合は `chsh -s \"$(command -v zsh)\"` を手動実行する。",
+]
+
+[packages]
+apt = ["curl", "fontconfig", "git", "unzip", "zsh"]
+
+[[blocks]]
+src = "files/zshrc.sh"
+dst = "~/.zshrc"
+marker = "cfg:zsh"
+
+[[files]]
+src = "files/my_theme.omp.json"
+dst = "~/.poshthemes/my_theme.omp.json"
+
+[[commands]]
+run = """
+RUNZSH=no CHSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+"""
+unless = "test -d \"$HOME/.oh-my-zsh\""
+requires = ["curl", "sh"]
+
+[[commands]]
+run = """
+mkdir -p "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+git clone https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
+"""
+unless = "test -d \"${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions\""
+requires = ["git"]
+
+[[commands]]
+run = """
+mkdir -p "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
+"""
+unless = "test -d \"${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting\""
+requires = ["git"]
+
+[[commands]]
+run = """
+curl -fsSL https://ohmyposh.dev/install.sh | bash -s
+"""
+requires = ["bash", "curl"]
+
+[[commands]]
+run = """
+curl -fsSL https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/themes.zip -o /tmp/themes.zip
+unzip -o /tmp/themes.zip -d ~/.poshthemes
+find ~/.poshthemes -name '*.omp.json' -exec chmod u+rw {} +
+"""
+requires = ["curl", "unzip"]
+
+[env]
+path_prepend = ["~/.local/bin"]
+

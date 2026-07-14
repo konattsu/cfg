@@ -1,0 +1,27 @@
+name = "node"
+depends_on = ["core"]
+
+[[blocks]]
+src = "files/nvm.zsh.sh"
+dst = "~/.zshrc"
+marker = "cfg:node:nvm"
+
+[[blocks]]
+src = "files/nvm.bash.sh"
+dst = "~/.bashrc"
+marker = "cfg:node:nvm"
+
+[[commands]]
+run = """
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.5/install.sh | bash
+. "$HOME/.nvm/nvm.sh"
+nvm install stable --latest-npm
+nvm alias default stable
+"""
+unless = """
+test -s "$HOME/.nvm/nvm.sh" &&
+. "$HOME/.nvm/nvm.sh" &&
+command -v npm
+"""
+requires = ["bash", "curl"]
+

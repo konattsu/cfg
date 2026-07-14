@@ -1,0 +1,2 @@
+# --- keychain ---
+eval "$(keychain --eval)"

@@ -1,0 +1,13 @@
+name = "docker"
+depends_on = ["core"]
+notes = [
+  "Docker 利用ユーザーを docker group に入れるには `sudo usermod -aG docker $USER` を手動実行し、再ログインする。",
+]
+
+[[commands]]
+run = """
+curl -fsSL https://get.docker.com | bash
+"""
+unless = "command -v docker"
+requires = ["bash", "curl"]
+

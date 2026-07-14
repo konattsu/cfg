@@ -1,0 +1,23 @@
+name = "cargo"
+depends_on = ["core"]
+
+[[blocks]]
+src = "files/cargo.sh"
+dst = "~/.zshrc"
+marker = "cfg:cargo"
+
+[[blocks]]
+src = "files/cargo.sh"
+dst = "~/.bashrc"
+marker = "cfg:cargo"
+
+[[commands]]
+run = """
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+"""
+unless = "command -v cargo"
+requires = ["curl"]
+
+[env]
+path_prepend = ["~/.cargo/bin"]
+

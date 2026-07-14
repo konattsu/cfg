@@ -1,0 +1,19 @@
+name = "git"
+depends_on = ["core"]
+notes = [
+  "Git commit signing の `user.signingkey` はローカルの公開鍵に合わせて手動設定する。",
+  "SSH 署名用の秘密鍵と GitHub 側の signing key 登録は repo 管理外。",
+]
+
+[packages]
+apt = ["git"]
+
+[[dirs]]
+path = "~/.ssh"
+mode = "700"
+
+[[files]]
+src = "files/.gitconfig"
+dst = "~/.gitconfig"
+mode = "644"
+
