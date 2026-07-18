@@ -6,6 +6,8 @@
 
 このリポジトリでは dotfiles、開発ツール、補助コマンドの導入手順を module として宣言する。module は「何を入れるか」「どこへ配置するか」「適用後に何を手動で行うか」を表す。実際の plan / apply は `scripts/cfg.py` が担う。
 
+初回導入用の公開入口は project root の `install.sh` とする。`scripts/` は clone 済み repo 内で使う実行部を置く場所とし、`curl ... | bash` で直接呼ばれる入口は置かない。bootstrap は `git` と `python3` を前提とし、不足している場合は自動導入せず error で終了する。
+
 初期段階では Ubuntu / Debian 系の Linux を主対象にする。macOS、Windows、GUI アプリ全般、組み込み向け環境、複雑な構成管理は対象外とする。
 
 ---
@@ -14,6 +16,7 @@
 
 ```text
 cfg/
+  install.sh
   SPECIFICATION.md
   scripts/
     cfg.py
@@ -398,6 +401,24 @@ scripts/apply.sh [module ...]
 ```
 
 module を指定しない場合は全 module を対象にする。module を指定した場合は、その module と `depends_on` の依存先を対象にする。
+
+clone から apply までを一度に行う場合は root の `install.sh` を使う。
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/install.sh | bash
+```
+
+module を指定する場合は `bash -s --` 以降に渡す。
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/install.sh | bash -s -- zsh node
+```
+
+既定では `~/.local/share/cfg` に shallow clone / update して `scripts/apply.sh` を実行する。`CFG_COMMAND=plan` を指定すると `scripts/plan.sh` を実行する。
+
+clone 先は XDG Base Directory の user data 配下として `~/.local/share/cfg` を使う。project root を永続的に残すことで再実行、plan 確認、差分確認、更新ができるようにする。ホーム直下への一時 clone と実行後の自己削除は、削除対象の誤りや再実行性の低下を避けるため既定動作にしない。
+
+`install.sh` は `git` と `python3` の存在だけを確認する。bootstrap 内では apt などによる fallback install は行わない。
 
 ### 7.1 path 展開
 
