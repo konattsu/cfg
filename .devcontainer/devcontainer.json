@@ -1,0 +1,41 @@
+{
+  "name": "cfg_devcontainer",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "latest"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // python
+        "ms-python.python",
+
+        // markdown
+        "bierner.markdown-mermaid",
+        "davidanson.vscode-markdownlint",
+
+        // git/github
+        "donjayamanne.githistory",
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+
+        // others
+        "asuka.insertnumbers",
+        "christian-kohler.path-intellisense",
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode",
+        "mosapride.zenkaku",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "shardulm94.trailing-spaces",
+        "streetsidesoftware.code-spell-checker",
+        "tamasfe.even-better-toml",
+        "wmaurer.change-case"
+      ]
+    }
+  }
+}
