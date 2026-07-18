@@ -1,7 +1,7 @@
 [user]
         name = konattsu
         email = 139730998+konattsu@users.noreply.github.com
-        signingkey = <`*.pub`の内容をそのまま張り付ける>
+        signingkey = "<`*.pub`へのパス>"
 [init]
         defaultBranch = main
 [core]

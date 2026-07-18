@@ -1,19 +1,19 @@
 name = "keychain"
 depends_on = ["core"]
-notes = [
-  "keychain に読み込ませる SSH key は必要に応じて手動で追加する。",
-]
+notes = ["Add SSH keys to keychain manually as needed."]
+
 
 [packages]
 apt = ["keychain"]
+
 
 [[blocks]]
 src = "files/keychain.sh"
 dst = "~/.zshrc"
 marker = "cfg:keychain"
 
+
 [[blocks]]
 src = "files/keychain.sh"
 dst = "~/.bashrc"
 marker = "cfg:keychain"
-

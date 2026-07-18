@@ -1,15 +1,13 @@
 name = "devcontainer"
 depends_on = ["node", "docker"]
-notes = [
-  "`exec_devcontainer` は running container が 1 つだけのとき、その container へ `/bin/bash` で入る補助コマンド。",
-]
+
 
 [[commands]]
 run = "npm install -g @devcontainers/cli"
 requires = ["npm"]
 
+
 [[files]]
 src = "files/exec_devcontainer.sh"
 dst = "~/.local/bin/exec_devcontainer"
 mode = "755"
-

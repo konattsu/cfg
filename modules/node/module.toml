@@ -1,15 +1,18 @@
 name = "node"
 depends_on = ["core"]
 
+
 [[blocks]]
 src = "files/nvm.zsh.sh"
 dst = "~/.zshrc"
 marker = "cfg:node:nvm"
 
+
 [[blocks]]
 src = "files/nvm.bash.sh"
 dst = "~/.bashrc"
 marker = "cfg:node:nvm"
+
 
 [[commands]]
 run = """
@@ -24,4 +27,3 @@ test -s "$HOME/.nvm/nvm.sh" &&
 command -v npm
 """
 requires = ["bash", "curl"]
-

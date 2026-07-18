@@ -1,10 +1,10 @@
 name = "github-cli"
 depends_on = ["core"]
-notes = [
-  "GitHub CLI の認証は必要に応じて `gh auth login` で手動実行する。",
-]
+notes = ["Run `gh auth login` to authenticate with GitHub."]
+
 
 [[commands]]
+# ref: https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian
 run = """
 sudo mkdir -p -m 755 /etc/apt/keyrings
 out=$(mktemp)
@@ -18,4 +18,3 @@ sudo apt install gh -y
 """
 unless = "command -v gh"
 requires = ["wget", "sudo"]
-

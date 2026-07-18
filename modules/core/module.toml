@@ -1,18 +1,18 @@
 name = "core"
 
+
 [packages]
 apt = [
-  "build-essential",
-  "ca-certificates",
-  "curl",
-  "ffmpeg",
-  "git",
-  "gnupg",
-  "libssl-dev",
-  "lsb-release",
-  "net-tools",
-  "pkg-config",
-  "unzip",
-  "wget",
+    "build-essential",
+    "ca-certificates",
+    "curl",
+    "ffmpeg",
+    "git",
+    "gnupg",
+    "libssl-dev",
+    "lsb-release",
+    "net-tools",
+    "pkg-config",
+    "unzip",
+    "wget",
 ]
-

@@ -1,13 +1,11 @@
 name = "codex"
 depends_on = ["node"]
-notes = [
-  "npm が見つからない場合は executor 側で `~/.nvm/nvm.sh` を source してから再確認する。",
-]
+
 
 [packages]
 apt = ["bubblewrap"]
 
+
 [[commands]]
 run = "npm install -g @openai/codex"
 requires = ["npm"]
-
