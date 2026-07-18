@@ -1,11 +1,11 @@
 name = "zsh"
 depends_on = ["core"]
 notes = [
-  "login shell を zsh に変える場合は `chsh -s \"$(command -v zsh)\"` を手動実行する。",
+    "Run `chsh -s \"$(command -v zsh)\"` to set zsh as your default shell.",
 ]
 
 [packages]
-apt = ["curl", "fontconfig", "git", "unzip", "zsh"]
+apt = ["fontconfig", "unzip", "zsh"]
 
 [[blocks]]
 src = "files/zshrc.sh"
@@ -55,4 +55,3 @@ requires = ["curl", "unzip"]
 
 [env]
 path_prepend = ["~/.local/bin"]
-

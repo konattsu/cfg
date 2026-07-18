@@ -1,5 +1,5 @@
 name = "github-cli"
-depends_on = ["core"]
+depends_on = ["zsh"]
 notes = ["Run `gh auth login` to authenticate with GitHub."]
 
 

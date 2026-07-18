@@ -1,5 +1,5 @@
 name = "git"
-depends_on = ["core"]
+depends_on = ["zsh"]
 notes = ["Remember to set the ssh key for signing commits."]
 
 

@@ -299,6 +299,8 @@ depends_on = ["core", "node"]
 
 executor は `depends_on` を使って適用順を決定する。循環依存は error とする。
 
+基本 module の適用順は `core` を最初、`zsh` をその次にする。その他の通常 module は、明確に不要な場合を除いて `zsh` に依存させる。これにより shell 本体と `.zshrc` の基本 block を先に配置してから、NVM、Cargo、keychain などの追加 shell block を適用する。
+
 ### 4.10 `notes`
 
 apply の最後に表示する手動作業。

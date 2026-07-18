@@ -1,5 +1,5 @@
 name = "keychain"
-depends_on = ["core"]
+depends_on = ["zsh"]
 notes = ["Add SSH keys to keychain manually as needed."]
 
 

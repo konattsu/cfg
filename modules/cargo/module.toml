@@ -1,5 +1,5 @@
 name = "cargo"
-depends_on = ["core"]
+depends_on = ["zsh"]
 
 
 [[blocks]]

@@ -1,5 +1,5 @@
 name = "docker"
-depends_on = ["core"]
+depends_on = ["zsh"]
 notes = [
     "Run `sudo usermod -aG docker $USER` to add your user to the docker group. Log out and back in for this to take effect.",
 ]
