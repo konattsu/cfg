@@ -1,0 +1,6 @@
+# cfg-managed Codex execpolicy rules.
+
+prefix_rule(
+    pattern = ["docker", "ps"],
+    decision = "allow",
+)
