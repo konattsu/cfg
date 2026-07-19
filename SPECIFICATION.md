@@ -47,6 +47,9 @@ cfg/
       module.toml
       files/nvm.bash.sh
       files/nvm.zsh.sh
+    nvim/
+      module.toml
+      files/
     zsh/
       module.toml
       files/zshrc.sh

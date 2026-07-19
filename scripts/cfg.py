@@ -474,7 +474,7 @@ def replace_or_append_block(existing: str, marker: str, content: str) -> str:
         prefix = existing
         if prefix and not prefix.endswith("\n"):
             prefix += "\n"
-        if prefix and not prefix.endswith("\n\n"):
+        while prefix and not prefix.endswith("\n\n\n"):
             prefix += "\n"
         return prefix + replacement
     start = starts[0]
