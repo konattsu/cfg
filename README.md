@@ -23,7 +23,3 @@ curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/install.sh | CFG_
 
 - `modules/`: 自動適用の対象
 - `extras/`: 自動適用とは別に単にgithubに保存しときたい設定
-
-## License
-
-Apache-2.0
