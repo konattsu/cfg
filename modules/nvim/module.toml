@@ -1,9 +1,5 @@
 name = "nvim"
 depends_on = ["core", "node", "github-cli"]
-notes = [
-    "Neovim is installed from the latest official AppImage into ~/.local/bin/nvim.",
-    "Run `nvim` once to let lazy.nvim download plugins.",
-]
 
 
 [packages]
