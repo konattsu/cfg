@@ -1,0 +1,12 @@
+name = "zoxide"
+depends_on = ["zsh"]
+
+
+[packages]
+apt = ["zoxide"]
+
+
+[[blocks]]
+src = "files/zoxide.zsh"
+dst = "~/.zshrc"
+marker = "cfg:zoxide"
