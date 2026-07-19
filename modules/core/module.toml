@@ -3,6 +3,7 @@ name = "core"
 
 [packages]
 apt = [
+    "btop",
     "build-essential",
     "ca-certificates",
     "curl",
