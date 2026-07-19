@@ -10,7 +10,6 @@ apt = [
     "imagemagick",
     "jq",
     "p7zip-full",
-    "pipx",
     "poppler-utils",
     "ripgrep",
     "wl-clipboard",
@@ -64,11 +63,6 @@ src = "files/plugins/lazygit.yazi/main.lua"
 dst = "~/.config/yazi/plugins/lazygit.yazi/main.lua"
 mode = "644"
 
-[[files]]
-src = "files/plugins/rich-preview.yazi/main.lua"
-dst = "~/.config/yazi/plugins/rich-preview.yazi/main.lua"
-mode = "644"
-
 
 [[commands]]
 run = """
@@ -78,11 +72,6 @@ ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
 """
 unless = "command -v fd"
 requires = ["fdfind", "ln", "mkdir"]
-
-[[commands]]
-run = "pipx install rich-cli"
-unless = "command -v rich"
-requires = ["pipx"]
 
 [[commands]]
 # ref: https://yazi-rs.github.io/docs/installation/#official-binaries
