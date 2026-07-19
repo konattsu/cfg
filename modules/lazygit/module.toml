@@ -29,7 +29,7 @@ tar -C "$tmp" -xf "$tmp/lazygit.tar.gz" lazygit
 install -D -m 755 "$tmp/lazygit" "$HOME/.local/bin/lazygit"
 rm -rf "$tmp"
 """
-unless = "command -v lazygit"
+unless = "test -x \"$HOME/.local/bin/lazygit\""
 requires = ["curl", "grep", "install", "mktemp", "tar", "uname"]
 
 

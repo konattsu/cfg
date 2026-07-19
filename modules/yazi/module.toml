@@ -70,7 +70,7 @@ set -euo pipefail
 mkdir -p "$HOME/.local/bin"
 ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
 """
-unless = "command -v fd"
+unless = "test -L \"$HOME/.local/bin/fd\""
 requires = ["fdfind", "ln", "mkdir"]
 
 [[commands]]
@@ -90,7 +90,7 @@ install -D -m 755 "$tmp/bin/yazi" "$HOME/.local/bin/yazi"
 install -D -m 755 "$tmp/bin/ya" "$HOME/.local/bin/ya"
 rm -rf "$tmp"
 """
-unless = "command -v yazi && command -v ya"
+unless = "test -x \"$HOME/.local/bin/yazi\" && test -x \"$HOME/.local/bin/ya\""
 requires = ["curl", "grep", "install", "mktemp", "uname", "unzip"]
 
 

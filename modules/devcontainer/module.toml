@@ -4,6 +4,7 @@ depends_on = ["node", "docker"]
 
 [[commands]]
 run = "npm install -g @devcontainers/cli"
+unless = "command -v devcontainer"
 requires = ["npm"]
 
 

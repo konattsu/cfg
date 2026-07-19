@@ -45,6 +45,7 @@ requires = ["git"]
 run = """
 curl -fsSL https://ohmyposh.dev/install.sh | bash -s
 """
+unless = "command -v oh-my-posh"
 requires = ["bash", "curl"]
 
 [env]

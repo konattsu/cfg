@@ -19,4 +19,5 @@ mode = "600"
 
 [[commands]]
 run = "npm install -g @openai/codex"
+unless = "command -v codex"
 requires = ["npm"]
