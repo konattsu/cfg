@@ -291,12 +291,6 @@ ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
 unless = "command -v fd"
 requires = ["fdfind"]
 
-[[commands]]
-run = """
-nvim --headless "+Lazy! install" +qa
-"""
-requires = ["nvim", "git"]
-
 
 [env]
 path_prepend = ["~/.local/bin"]
