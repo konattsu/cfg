@@ -1,0 +1,109 @@
+name = "yazi"
+depends_on = ["core", "lazygit"]
+
+
+[packages]
+apt = [
+    "fd-find",
+    "fzf",
+    "hexyl",
+    "imagemagick",
+    "jq",
+    "p7zip-full",
+    "pipx",
+    "poppler-utils",
+    "ripgrep",
+    "wl-clipboard",
+    "xclip",
+    "zoxide",
+]
+
+
+[[dirs]]
+path = "~/.config/yazi"
+mode = "755"
+
+
+[[files]]
+src = "files/init.lua"
+dst = "~/.config/yazi/init.lua"
+mode = "644"
+
+[[files]]
+src = "files/keymap.toml"
+dst = "~/.config/yazi/keymap.toml"
+mode = "644"
+
+[[files]]
+src = "files/package.toml"
+dst = "~/.config/yazi/package.toml"
+mode = "644"
+
+[[files]]
+src = "files/theme.toml"
+dst = "~/.config/yazi/theme.toml"
+mode = "644"
+
+[[files]]
+src = "files/yazi.toml"
+dst = "~/.config/yazi/yazi.toml"
+mode = "644"
+
+[[files]]
+src = "files/plugins/folder-rules.yazi/main.lua"
+dst = "~/.config/yazi/plugins/folder-rules.yazi/main.lua"
+mode = "644"
+
+[[files]]
+src = "files/plugins/hexyl.yazi/main.lua"
+dst = "~/.config/yazi/plugins/hexyl.yazi/main.lua"
+mode = "644"
+
+[[files]]
+src = "files/plugins/lazygit.yazi/main.lua"
+dst = "~/.config/yazi/plugins/lazygit.yazi/main.lua"
+mode = "644"
+
+[[files]]
+src = "files/plugins/rich-preview.yazi/main.lua"
+dst = "~/.config/yazi/plugins/rich-preview.yazi/main.lua"
+mode = "644"
+
+
+[[commands]]
+run = """
+set -euo pipefail
+mkdir -p "$HOME/.local/bin"
+ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+"""
+unless = "command -v fd"
+requires = ["fdfind", "ln", "mkdir"]
+
+[[commands]]
+run = "pipx install rich-cli"
+unless = "command -v rich"
+requires = ["pipx"]
+
+[[commands]]
+# ref: https://yazi-rs.github.io/docs/installation/#official-binaries
+run = """
+set -euo pipefail
+YAZI_VERSION=$(curl -fsSL "https://api.github.com/repos/sxyazi/yazi/releases/latest" | grep -Po '"tag_name": *"v\\K[^"]*')
+case "$(uname -m)" in
+  x86_64) YAZI_TARGET="x86_64-unknown-linux-gnu" ;;
+  aarch64|arm64) YAZI_TARGET="aarch64-unknown-linux-gnu" ;;
+  *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+esac
+tmp=$(mktemp -d)
+curl -fsSL -o "$tmp/yazi.zip" "https://github.com/sxyazi/yazi/releases/download/v${YAZI_VERSION}/yazi-${YAZI_TARGET}.zip"
+unzip -j "$tmp/yazi.zip" "*/yazi" "*/ya" -d "$tmp/bin"
+install -D -m 755 "$tmp/bin/yazi" "$HOME/.local/bin/yazi"
+install -D -m 755 "$tmp/bin/ya" "$HOME/.local/bin/ya"
+rm -rf "$tmp"
+"""
+unless = "command -v yazi && command -v ya"
+requires = ["curl", "grep", "install", "mktemp", "uname", "unzip"]
+
+
+[env]
+path_prepend = ["~/.local/bin"]

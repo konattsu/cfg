@@ -1,0 +1,24 @@
+[[mgr.prepend_keymap]]
+on = ["g", "c"]
+run = "cd ~/.local/share/chezmoi"
+desc = "Go to config directory"
+
+[[mgr.prepend_keymap]]
+on = ["g", "i"]
+run = "plugin lazygit"
+desc = "run lazygit"
+
+[[mgr.prepend_keymap]]
+on = ["g", "D"]
+run = "cd ~/Documents"
+desc = "open Document"
+
+[[mgr.prepend_keymap]]
+on = ["z"]
+run = "plugin zoxide"
+desc = "open Document"
+
+[[mgr.prepend_keymap]]
+on = ["Z"]
+run = "plugin fzf"
+desc = "open Document"

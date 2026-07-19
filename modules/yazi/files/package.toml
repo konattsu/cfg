@@ -1,0 +1,14 @@
+[[plugin.deps]]
+use = "AnirudhG07/rich-preview"
+rev = "8be4d27"
+hash = "c9a3d0731e7d7340e2c6d6126b1f3aa3"
+
+[[plugin.deps]]
+use = "Reledia/hexyl"
+rev = "39d3d4e"
+hash = "dd624cbaff94af65f39fd86bc57b340"
+
+[[plugin.deps]]
+use = "Lil-Dank/lazygit"
+rev = "c82794f"
+hash = "2b0c33928986f126d5c5a4cac31a6b46"
