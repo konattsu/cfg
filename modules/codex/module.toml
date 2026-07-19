@@ -1,11 +1,6 @@
 name = "codex"
 depends_on = ["node"]
 
-notes = [
-  "Codex execpolicy rules are installed to ~/.codex/rules/cfg.rules. Restart Codex after applying this module.",
-  "devcontainer exec is approval-gated because it can run arbitrary commands inside a container.",
-]
-
 
 [packages]
 apt = ["bubblewrap"]
