@@ -1,0 +1,52 @@
+name = "uv"
+depends_on = ["core", "zsh"]
+
+
+[[dirs]]
+path = "~/.local/share/bash-completion/completions"
+mode = "755"
+
+[[dirs]]
+path = "~/.local/share/zsh/site-functions"
+mode = "755"
+
+
+[[commands]]
+run = """
+set -euo pipefail
+curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
+"""
+unless = "command -v uv"
+requires = ["curl", "sh"]
+
+[[commands]]
+run = """
+uv generate-shell-completion bash > "$HOME/.local/share/bash-completion/completions/uv"
+"""
+unless = "test -f ~/.local/share/bash-completion/completions/uv"
+requires = ["uv"]
+
+[[commands]]
+run = """
+uvx --generate-shell-completion bash > "$HOME/.local/share/bash-completion/completions/uvx"
+"""
+unless = "test -f ~/.local/share/bash-completion/completions/uvx"
+requires = ["uvx"]
+
+[[commands]]
+run = """
+uv generate-shell-completion zsh > "$HOME/.local/share/zsh/site-functions/_uv"
+"""
+unless = "test -f ~/.local/share/zsh/site-functions/_uv"
+requires = ["uv"]
+
+[[commands]]
+run = """
+uvx --generate-shell-completion zsh > "$HOME/.local/share/zsh/site-functions/_uvx"
+"""
+unless = "test -f ~/.local/share/zsh/site-functions/_uvx"
+requires = ["uvx"]
+
+
+[env]
+path_prepend = ["~/.local/bin"]

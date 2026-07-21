@@ -4,6 +4,8 @@
 # --- Oh My Zsh ---
 export ZSH="$HOME/.oh-my-zsh"
 
+fpath=("$HOME/.local/share/zsh/site-functions" $fpath)
+
 plugins=(
   git
   zsh-syntax-highlighting
