@@ -16,3 +16,8 @@ mode = "700"
 src = "files/.gitconfig"
 dst = "~/.gitconfig"
 mode = "644"
+
+[[files]]
+src = "files/allowed_signers"
+dst = "~/.ssh/allowed_signers"
+mode = "644"
