@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_url="${CFG_REPO_URL:-https://github.com/konattsu/cfg.git}"
-branch="${CFG_BRANCH:-main}"
+branch="${CFG_BRANCH:-fix-nvim-critical-issues}"
 command="${CFG_COMMAND:-apply}"
 
 case "$command" in

@@ -2,7 +2,10 @@ return {
   {
     "folke/snacks.nvim",
     opts = {
-      image = { enabled = true },
+      image = {
+        enabled = false,
+        formats = {},
+      },
     },
   },
   {
