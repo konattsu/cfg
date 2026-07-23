@@ -4,6 +4,8 @@ set -euo pipefail
 yes=0
 git_commit_key="$HOME/.ssh/git_commit"
 allowed_signers="$HOME/.ssh/allowed_signers"
+git_user_name="konattsu"
+git_user_email="139730998+konattsu@users.noreply.github.com"
 
 usage() {
   cat <<'EOF'
@@ -55,10 +57,10 @@ confirm() {
 }
 
 git_email() {
-  git config --global --get user.email 2>/dev/null || true
+  git config --global --get user.email 2>/dev/null || printf '%s\n' "$git_user_email"
 }
 
-append_allowed_signer() {
+ensure_allowed_signer() {
   local pub_key="$git_commit_key.pub"
   local principal key_type key_body key_comment
 
@@ -68,6 +70,12 @@ append_allowed_signer() {
   [[ -n "$principal" ]] || principal="${USER:-user}@$(hostname)"
 
   read -r key_type key_body key_comment <"$pub_key"
+  touch "$allowed_signers"
+  if awk -v key_type="$key_type" -v key_body="$key_body" '$2 == key_type && $3 == key_body { found = 1 } END { exit !found }' "$allowed_signers"; then
+    chmod 644 "$allowed_signers"
+    return
+  fi
+
   printf '%s %s %s' "$principal" "$key_type" "$key_body" >>"$allowed_signers"
   if [[ -n "${key_comment:-}" ]]; then
     printf ' %s' "$key_comment" >>"$allowed_signers"
@@ -110,8 +118,16 @@ run_git_commit_key_followup() {
   fi
 
   if [[ -f "$git_commit_key.pub" ]]; then
-    append_allowed_signer
-    echo "done: appended allowed signer to $allowed_signers."
+    ensure_allowed_signer
+    echo "done: ensured allowed signer in $allowed_signers."
+
+    git config --global user.name "$git_user_name"
+    git config --global user.email "$git_user_email"
+    git config --global user.signingkey "$git_commit_key.pub"
+    git config --global gpg.format ssh
+    git config --global gpg.ssh.allowedSignersFile "$allowed_signers"
+    git config --global commit.gpgsign true
+    echo "done: configured git SSH commit signing."
 
     echo
     echo "Public key to register with GitHub:"
@@ -125,13 +141,13 @@ show_keychain_followup() {
   section "keychain"
 
   cat <<'EOF'
-Open ~/.zshrc, ~/.bashrc, or the cfg keychain block source and specify the SSH key to load.
+Put local keychain settings in ~/.config/cfg/keychain.local.sh if you want keychain to load specific SSH keys.
 EOF
 
   if [[ -f "$git_commit_key" ]]; then
     echo
-    echo "Suggested key:"
-    echo "  $git_commit_key"
+    echo "Example:"
+    echo "  eval \"\$(keychain --eval $git_commit_key)\""
     return
   fi
 

@@ -1,151 +1,120 @@
-# cfg module 仕様
+# Module System
 
-## 1. 目的
+この文書は `scripts/cfg.py` の現在の挙動を書く。願望や将来案は書かない。
 
-`konattsu/cfg` は、Linux 開発環境を再現するための設定リポジトリとする。
+## Process Exit
 
-このリポジトリでは dotfiles、開発ツール、補助コマンドの導入手順を module として宣言する。module は「何を入れるか」「どこへ配置するか」「適用後に何を手動で行うか」を表す。実際の plan / apply は `scripts/cfg.py` が担う。
+`scripts/cfg.py` は以下の exit code を返す。
 
-初回導入用の公開入口は project root の `install.sh` とする。`scripts/` は clone 済み repo 内で使う実行部を置く場所とし、`curl ... | bash` で直接呼ばれる入口は置かない。bootstrap は `git` と `python3` を前提とし、不足している場合は自動導入せず error で終了する。
+- `0`: `plan` または `apply` が最後まで到達した
+- `1`: module 定義の検証で `ConfigError` が投げられた
+- command の exit code: `commands[].run`、`commands[].unless` 以外の実行 command、または apt command が `subprocess.CalledProcessError` を返した
 
-初期段階では Ubuntu / Debian 系の Linux を主対象にする。macOS、Windows、GUI アプリ全般、組み込み向け環境、複雑な構成管理は対象外とする。
-
----
-
-## 2. 現在の構成
+`ConfigError` の場合、stderr に以下の形式で出力する。
 
 ```text
-cfg/
-  install.sh
-  SPECIFICATION.md
-  scripts/
-    cfg.py
-    plan.sh
-    apply.sh
-  modules/
-    cargo/
-      module.toml
-      files/cargo.sh
-    codex/
-      module.toml
-    core/
-      module.toml
-    devcontainer/
-      module.toml
-      files/exec_devcontainer.sh
-    docker/
-      module.toml
-    git/
-      module.toml
-      files/.gitconfig
-    github-cli/
-      module.toml
-    keychain/
-      module.toml
-      files/keychain.sh
-    node/
-      module.toml
-      files/nvm.bash.sh
-      files/nvm.zsh.sh
-    nvim/
-      module.toml
-      files/
-    zsh/
-      module.toml
-      files/zshrc.sh
-      files/my_theme.omp.json
+error: <message>
 ```
 
-既存の `ai/`, `git/`, `wsl/`, `zsh/` 配下にあったスクリプトや設定は、段階的に `modules/` へ移行する。移行前のファイルは `stale/` に退避する。
+command 実行が exit code `N` で失敗した場合、stderr に以下を出力し、process も `N` を返す。
 
-AutoHotkey は Windows 用なので、この Linux 前提の module 仕様には含めない。
+```text
+error: command failed with exit code N
+```
 
----
+この文書で「停止する」と書く場合、以降の module 処理を実行せず、上記の exit code で process を終了することを指す。
 
-## 3. 設計方針
+## Entry Points
 
-1. module はサービス単位で分割する。
-   例: `git`, `zsh`, `node`, `codex`, `docker`
+clone 済み repo で使う command:
 
-2. module は宣言だけを持つ。
-   apt の一括実行、依存順の解決、PATH の反映、バックアップ、実行可否判定は executor の責務にする。
+```sh
+./scripts/plan.sh [module ...]
+./scripts/apply.sh [module ...]
+```
 
-3. 初期の宣言対象は以下に限定する。
-   - apt package
-   - directory 作成
-   - file 配置
-   - artifact 取得・配置
-   - command 実行
-   - module 間依存
-   - 実行時 PATH 追加
-   - 適用後 notes
+`scripts/plan.sh` は `python3 scripts/cfg.py plan "$@"` を実行する。
 
-4. バージョン固定は初期段階では必須にしない。
-   apt / npm / artifact は、その時点で通常取得できるものを使う。固定が必要になった時点で module ごとに検討する。
+`scripts/apply.sh` は `python3 scripts/cfg.py apply "$@"` を実行する。
 
-5. artifact のハッシュ値検証は初期段階では必須にしない。
-   検証や pinning は後から追加できる拡張点として扱う。
+`install.sh` は以下を行う。
 
-6. 秘密情報とマシン固有値は repo 管理外にする。
-   token、秘密鍵、署名鍵の実体、環境固有パス、認証済み状態はコミットしない。
+1. `CFG_DIR` がなければ `git clone --depth 1 --branch "$CFG_BRANCH" "$CFG_REPO_URL" "$CFG_DIR"` を実行する
+2. `CFG_DIR/.git` があれば `git fetch`、branch switch、`git pull --ff-only --depth 1` を実行する
+3. `"$CFG_DIR/scripts/$CFG_COMMAND.sh" "$@"` を実行する
 
----
+default:
 
-## 4. module.toml
+```sh
+CFG_REPO_URL=https://github.com/konattsu/cfg.git
+CFG_BRANCH=main
+CFG_DIR=$HOME/.local/share/cfg
+CFG_COMMAND=apply
+```
 
-各 module は `modules/<name>/module.toml` を持つ。
+`CFG_COMMAND` が `plan` / `apply` 以外の場合、`install.sh` は stderr に以下を出して exit code 2 を返す。
+
+```text
+error: CFG_COMMAND must be 'plan' or 'apply'
+```
+
+## Module Selection
+
+module は `modules/<name>/module.toml` で定義する。
+
+`name` は `<name>` と一致しなければならない。一致しない場合は `ConfigError` で停止する。
+
+`plan` / `apply` に module 名を渡さない場合、`modules/*/module.toml` を持つ全 directory を読む。
+
+`plan git keychain` のように module 名を渡した場合、渡した module と、その `depends_on` を再帰的に読む。
+
+存在しない module 名を渡した場合は `ConfigError` で停止する。
+
+`depends_on` に存在しない module 名を書いた場合は `ConfigError` で停止する。
+
+dependency cycle がある場合は `ConfigError` で停止する。
+
+処理順:
+
+- 依存先を先に処理する
+- 同じ階層の module は module 名の辞書順で処理する
+
+## module.toml Keys
+
+top-level で読める key:
+
+- `name`
+- `depends_on`
+- `notes`
+- `packages`
+- `dirs`
+- `files`
+- `blocks`
+- `commands`
+- `artifacts`
+- `env`
+
+上記以外の key がある場合は `ConfigError` で停止する。
+
+## packages.apt
 
 ```toml
-name = "example"
-depends_on = ["core"]
-notes = ["tool の認証は初回起動後に手動で行う。"]
-
 [packages]
-apt = ["curl"]
-
-[[dirs]]
-path = "~/.ssh"
-mode = "700"
-
-[[files]]
-src = "files/script.sh"
-dst = "~/.local/bin/script"
-mode = "755"
-
-[[blocks]]
-src = "files/zshrc.sh"
-dst = "~/.zshrc"
-marker = "cfg:zsh"
-
-[[artifacts]]
-name = "tool"
-url = "https://example.com/tool-linux-x86_64.tar.gz"
-extract = true
-bin = "tool"
-dst = "~/.local/bin/tool"
-
-[[commands]]
-run = "tool setup"
-unless = "command -v tool"
-requires = ["tool"]
-
-[env]
-path_prepend = ["~/.local/bin"]
+apt = ["git", "curl"]
 ```
 
-### 4.1 `name`
+`apply` は選択 module の `packages.apt` を集める。重複する package 名は 1 回にまとめる。
 
-module 名を表す。原則として `modules/<name>/` の directory 名と一致させる。
+package が 1 個以上ある場合、module 個別処理の前に以下を実行する。
 
-### 4.2 `packages.apt`
+```sh
+sudo apt update
+sudo apt install -y <packages...>
+```
 
-apt で導入する package 名の一覧。
+`plan` は package 名を表示するだけで、`sudo apt` を実行しない。
 
-executor は全 module の `packages.apt` を集約し、重複排除して一括 install する。module ごとに `apt install` を実行しない。
-
-### 4.3 `dirs`
-
-作成する directory の一覧。
+## dirs
 
 ```toml
 [[dirs]]
@@ -153,79 +122,121 @@ path = "~/.ssh"
 mode = "700"
 ```
 
-- `path`: 作成先 path
-- `mode`: 任意。3 桁または 4 桁の octal 文字列
+schema:
 
-`mode` は必ず `"700"` のような文字列で書く。`700` や `0755` のような数値は使わない。
+- `path`: 必須 string
+- `mode`: 省略可。書く場合は string。`^[0-7]{3,4}$` に一致しなければ `ConfigError` で停止する
 
-owner / group / symbolic mode は初期段階では扱わない。
+path expansion:
 
-### 4.4 `files`
+- `~` は `Path.home()` に変換する
+- `~/x` は `Path.home() / "x"` に変換する
+- `$HOME`、`${HOME}`、その他 `$` を含む path は `ConfigError` で停止する
 
-repo 内の file を配置する一覧。
+`apply` の処理:
+
+1. `path.mkdir(parents=True, exist_ok=True)` を実行する
+2. `mode` があれば `path.chmod(int(mode, 8))` を実行する
+
+結果:
+
+- directory が存在しない場合は作成する
+- directory が存在する場合も停止しない
+- `mode` があれば既存 directory の mode も変更する
+- directory 内の file / directory は作成・上書き・削除しない
+- owner / group は変更しない
+
+`plan` は `dir <path> mode=<mode>` を表示するだけで filesystem を変更しない。
+
+## files
 
 ```toml
 [[files]]
-src = "files/.gitconfig"
-dst = "~/.gitconfig"
+src = "files/config"
+dst = "~/.config/cfg/git/config"
 mode = "644"
 ```
 
-- `src`: module directory からの相対 path
-- `dst`: 配置先 path
-- `mode`: 任意。3 桁または 4 桁の octal 文字列
+schema:
 
-executor は `dst` の親 directory を作成してから file を配置する。既存 file は backup なしで上書きする。`mode` が指定されている場合は配置後に chmod する。
+- `src`: 必須 string。absolute path は `ConfigError` で停止する
+- `dst`: 必須 string
+- `mode`: 省略可。書く場合は string。`^[0-7]{3,4}$` に一致しなければ `ConfigError` で停止する
 
-### 4.5 `blocks`
+path expansion:
 
-既存 file の一部に repo 管理 block を挿入・更新する一覧。
+- `dst` の `~` / `~/...` は `dirs.path` と同じ規則で展開する
+- `dst` に `$` が含まれる場合は `ConfigError` で停止する
+
+`apply` の処理:
+
+1. `module.path / src` が通常 file でなければ `ConfigError` で停止する
+2. `dst.parent.mkdir(parents=True, exist_ok=True)` を実行する
+3. `shutil.copyfile(src, dst)` を実行する
+4. `mode` があれば `dst.chmod(int(mode, 8))` を実行する
+
+結果:
+
+- `dst` が存在しない場合は作成する
+- `dst` が存在する場合は backup なしで内容を置き換える
+- `dst` が symlink の場合、Python `shutil.copyfile` の挙動に従う。独自の symlink 判定はしない
+
+local 値を書き込む file を `[[files]]` に入れると、次回 `apply` で local 値は消える。
+
+## blocks
 
 ```toml
 [[blocks]]
-src = "files/zshrc.sh"
+src = "files/keychain.sh"
 dst = "~/.zshrc"
-marker = "cfg:zsh"
+marker = "cfg:keychain"
 ```
 
-- `src`: module directory からの相対 path
-- `dst`: block を挿入する対象 file
-- `marker`: 必須。managed block を識別する文字列
+schema:
 
-executor は `src` の内容を以下の marker で囲んで `dst` に反映する。
+- `src`: 必須 string。absolute path は `ConfigError` で停止する
+- `dst`: 必須 string
+- `marker`: 必須 string。`>>>` または改行を含む場合は `ConfigError` で停止する
+
+path expansion:
+
+- `dst` の `~` / `~/...` は `dirs.path` と同じ規則で展開する
+- `dst` に `$` が含まれる場合は `ConfigError` で停止する
+
+marker line:
 
 ```sh
-# >>> cfg:zsh >>>
-...
-# <<< cfg:zsh <<<
+# >>> cfg:keychain >>>
+# <<< cfg:keychain <<<
 ```
 
-既に同じ marker block が存在する場合は、その block の中身だけを置換する。存在しない場合は file 末尾へ追加する。`dst` が存在しない場合は新規作成する。
+`#` は固定。module 定義では変更できない。
 
-単純な append は行わない。再実行で重複しやすく、削除や更新も難しくなるため。
+`apply` の処理:
 
-MVP では marker 行の comment prefix は `#` 固定とし、shell config や ssh config など `#` comment が使える text file を対象にする。`marker` には任意の文字列を書けるが、初期実装では `>>>` や改行を含む値は想定しない。
+1. `module.path / src` が通常 file でなければ `ConfigError` で停止する
+2. `dst.parent.mkdir(parents=True, exist_ok=True)` を実行する
+3. `dst` があれば UTF-8 text として読む。なければ既存 content を空文字列にする
+4. start line と end line を探す
+5. start/end の数が違えば `ConfigError` で停止する
+6. start が 2 個以上あれば `ConfigError` で停止する
+7. start が end より後にあれば `ConfigError` で停止する
+8. block がなければ file 末尾へ追加する
+9. block が 1 個あれば start line から end line までを置き換える
+10. `dst.write_text(updated, encoding="utf-8")` を実行する
 
-executor は backup なしで対象 file を更新する。managed block 外の内容は変更しない。
+追加時の空行:
 
-### 4.6 `artifacts`
+- 既存 content が newline で終わらなければ newline を 1 個足す
+- block 追加前に、既存 content の末尾が newline 3 個になるまで newline を足す
 
-URL から取得する binary / archive の定義。
+結果:
 
-```toml
-[[artifacts]]
-name = "tool"
-url = "https://example.com/tool-linux-x86_64.tar.gz"
-extract = true
-bin = "tool"
-dst = "~/.local/bin/tool"
-```
+- marker block 外の text はそのまま残る
+- marker block 内の手編集は次回 `apply` で `src` の内容に戻る
+- local 値は marker block 内に書かない。marker block から別 file を `source` する
 
-初期段階では `sha256` や version は必須にしない。必要になった場合に `sha256`, `version`, `strip_components` などを追加する。
-
-### 4.7 `commands`
-
-module 固有の補助 command。
+## commands
 
 ```toml
 [[commands]]
@@ -234,316 +245,158 @@ unless = "command -v codex"
 requires = ["npm"]
 ```
 
-- `run`: 実行する shell command
-- `unless`: 任意。成功した場合は `run` を skip する条件 command
-- `requires`: 任意。`run` 前に存在確認する command 名の一覧
+schema:
 
-`requires` は契約プログラミングの precondition に近い。依存 package の install は行わず、実行直前に command が現在の executor process から見えることを検証するための項目とする。
+- `run`: 必須 string
+- `unless`: 省略可。書く場合は string
+- `requires`: 省略可。書く場合は string list
 
-`requires` の値は module 名ではなく executable name とする。executor は `requires` から module 適用順を推測しない。適用順は `depends_on` だけで決める。
+`requires`:
 
-`run` と `unless` は複数行 command を許可する。pipe や quote を含む command は TOML の multi-line basic string を使う。
+- 値は executable name のみ
+- `^[A-Za-z0-9._+-]+$` に一致しなければ `ConfigError` で停止する
+- `/`、空白、shell metacharacter は書けない
 
-```toml
-[[commands]]
-run = """
-curl -fsSL https://example.com/install.sh | bash
-"""
-unless = """
-test -s "$HOME/.example/installed" &&
-command -v example
-"""
-requires = ["curl", "bash"]
-```
+`apply` の処理:
 
-`unless` は既存 script の `if ! command -v ...` を module に落とすための仕組みとする。
+1. `requires` の各 command を `shutil.which(command, PATH)` で確認する
+2. command が `node` / `npm` / `npx` の場合、見つからなければ `~/.nvm/nvm.sh` を読み込んでから再確認する
+3. 見つからない `requires` があれば `ConfigError` で停止する
+4. `unless` があれば `bash -c <unless>` を module directory で実行する
+5. `unless` の exit code が 0 なら `run` を実行しない
+6. `unless` の exit code が 0 以外なら `bash -c <run>` を module directory で実行する
+7. `run` が exit code 0 以外を返した場合、`scripts/cfg.py` は同じ exit code で停止する
 
-`depends_on`、`requires`、`unless` の役割は分ける。
+`requires` は module の順序を変更しない。順序は `depends_on` だけで決まる。
 
-- `depends_on`: module 適用順を決める
-- `requires`: command 実行前の precondition を検証する
-- `unless`: command を skip してよいか判定する
+`unless = "command -v tool"` は、`tool` が PATH にあれば `run` しないという意味になる。既存 tool の version は確認しない。
 
-例:
-
-```toml
-name = "codex"
-depends_on = ["node"]
-
-[[commands]]
-run = "npm install -g @openai/codex"
-requires = ["npm"]
-```
-
-この例では `depends_on: node` が nvm / Node.js / npm の導入順を保証し、`requires: npm` が `npm install` 実行直前の PATH 解決と存在確認を担う。
-
-読み替えると、`requires: npm` は「この command を実行する前に、現在の executor process から `npm` が実行可能でなければならない」という契約である。
-
-### 4.8 `env`
-
-executor 自身の実行環境へ反映する値。
+## env.path_prepend
 
 ```toml
 [env]
 path_prepend = ["~/.local/bin"]
 ```
 
-`env.path_prepend` は、後続 module の `commands` や `requires` 判定で必要な PATH を追加するために使う。
+schema:
 
-dotfile を配置して `.bashrc` や `.zshrc` を再読み込みする方式には頼らない。非対話 shell では期待通りに読み込まれないことがあり、親 shell にも反映されないため。
+- `path_prepend`: 省略可。書く場合は string list
+- item に `$` が含まれる場合は `ConfigError` で停止する
 
-### 4.9 `depends_on`
+`apply` / `plan` の処理:
 
-先に適用する module 名の一覧。
+1. module 処理の先頭で展開する
+2. 各 path の `~` / `~/...` を `dirs.path` と同じ規則で展開する
+3. executor process の `PATH` 先頭に追加する
 
-```toml
-depends_on = ["core", "node"]
-```
+この変更は現在の `scripts/cfg.py` process と、その子 process にだけ効く。ユーザーの親 shell の `PATH` は変更しない。
 
-executor は `depends_on` を使って適用順を決定する。循環依存は error とする。
-
-基本 module の適用順は `core` を最初、`zsh` をその次にする。その他の通常 module は、明確に不要な場合を除いて `zsh` に依存させる。これにより shell 本体と `.zshrc` の基本 block を先に配置してから、NVM、Cargo、keychain などの追加 shell block を適用する。
-
-### 4.10 `notes`
-
-apply の最後に表示する手動作業。
+## notes
 
 ```toml
-notes = [
-  "Git commit signing の `user.signingkey` はローカルの公開鍵に合わせて手動設定する。",
-]
+notes = ["Run `gh auth login` to authenticate with GitHub."]
 ```
 
-git signing key、秘密鍵、GitHub 認証、Docker group 反映のための再ログインなど、安全に自動化しづらい作業は `notes` に書く。
+`notes` は `plan` / `apply` の最後に表示する文字列。実行しない。
 
-任意文字列を apply の引数で渡す仕組みは作らない。必要な注意事項は module 定義に固定する。
+`scripts/cfg.py` は `scripts/followup-wsl.sh` の存在を参照しない。
 
----
+## State Boundaries
 
-## 5. executor の責務
+この repo では `apply` が以下を変更する。
 
-executor は以下を担う。
+- `[[dirs]]` の directory と mode
+- `[[files]]` の destination file 全体
+- `[[blocks]]` の marker block 内
+- `[[commands]]` が実行する command の結果
 
-1. 対象 module を決定する
-2. `depends_on` から適用順を解決する
-3. `packages.apt` を集約し、重複排除する
-4. 必要に応じて `apt update` を実行する
-5. apt package を一括 install する
-6. `env.path_prepend` を executor の現在プロセスへ反映する
-7. `dirs` を作成し、指定された `mode` を設定する
-8. `artifacts` を取得・配置する
-9. `files` を配置し、指定された `mode` を設定する
-10. `blocks` を挿入・更新する
-11. `commands[].requires` を確認する。`npm`, `node`, `npx` は必要に応じて nvm を読み込んで再確認する
-12. `commands[].unless` が成功する場合は該当 command を skip する
-13. `commands[].run` を実行する
-14. `notes` を module ごとに集約し、最後に表示する
+`apply` は以下を変更しない。
 
-root 権限操作は原則 apt と、公式 installer が必要とする範囲に限定する。
+- SSH 秘密鍵
+- `~/.ssh/allowed_signers`
+- GitHub login
+- default shell
+- docker group membership
+- keychain に渡す個別 key
 
----
+上の一覧にある file を `[[files]]` に入れると、`apply` が file 全体を上書きする。この repo では入れない。
 
-## 6. Node.js / npm / nvm
+## Current Module Decisions
 
-Node.js の version 管理は repo の責務にしない。現在は `node` module が nvm を導入し、nvm 経由で stable Node.js と npm を入れる。
+### Git
 
-`depends_on: node` は、その module の前に `node` module を適用するという意味を持つ。`node` module は以下を行う。
+`modules/git` は `~/.gitconfig` を `[[files]]` で配置しない。
 
-1. nvm install script を実行する
-2. `~/.nvm/nvm.sh` を source する
-3. `nvm install stable --latest-npm` を実行する
-4. `nvm alias default stable` を設定する
-
-ただし、`depends_on: node` は後続 command から `npm` が PATH 上に見えることまでは保証しない。`node` module の command 内で `~/.nvm/nvm.sh` を source しても、その PATH 変更は command の実行 shell 内だけで終わる可能性があるため。
-
-そのため、`npm` を使う module は `commands[].requires` に `npm` を書く。
-
-```toml
-depends_on = ["node"]
-
-[[commands]]
-run = "npm install -g @devcontainers/cli"
-requires = ["npm"]
-```
-
-executor は `requires: npm` を解決するとき、以下の順序で確認する。
-
-1. 通常の `PATH` で `npm` を探す
-2. 見つからず `~/.nvm/nvm.sh` が存在する場合、現在の apply process で source する
-3. もう一度 `npm` を探す
-4. それでも見つからなければ error にする
-
-この resolver は nvm を install しない。`~/.nvm/nvm.sh` が存在しない場合は、`node` module が未適用または失敗した signal として扱う。
-
-初回 `apply.sh` では次の流れを想定する。
+`modules/git` は以下を配置する。
 
 ```text
-node module
-  nvm を install
-  nvm 経由で Node.js / npm を install
-
-codex / devcontainer など npm 依存 module
-  requires: npm
-  PATH に npm がなければ ~/.nvm/nvm.sh を source
-  npm が見えたら npm install -g ... を実行
+~/.config/cfg/git/config
 ```
 
-固定 path を `env.path_prepend` に書く方式は採用しない。`~/.nvm/versions/node/<version>/bin` は導入された Node.js version に依存するため。
-
----
-
-## 7. MVP executor 実装方針
-
-executor は Python で実装する。`module.toml` は `tomllib` で読み込み、schema validation は厳しめに行う。
-
-Python 3.11+ では `tomllib` は標準ライブラリとして使える。Python 3.10 以前で実行する場合は `tomli` package が必要になる。
-
-`plan` と `apply` を含める。backup は作らないため、`apply` 前に `plan` で file 上書きや block 更新の対象を確認できることを安全性の前提にする。
+`modules/git` は以下を 1 回だけ追加する。既に同じ include path がある場合は追加しない。
 
 ```sh
-scripts/plan.sh [module ...]
-scripts/apply.sh [module ...]
+git config --global --add include.path "$HOME/.config/cfg/git/config"
 ```
 
-module を指定しない場合は全 module を対象にする。module を指定した場合は、その module と `depends_on` の依存先を対象にする。
+Git user, email, signing key, `allowed_signers` は `modules/git` では設定しない。
 
-clone から apply までを一度に行う場合は root の `install.sh` を使う。
+### Keychain
+
+`modules/keychain` は `~/.zshrc` と `~/.bashrc` に marker block を入れる。
+
+block の実行内容:
+
+1. `~/.config/cfg/keychain.local.sh` が readable なら `source` する
+2. readable でなければ `eval "$(keychain --eval)"` を実行する
+
+個別 key を読み込ませる場合は `~/.config/cfg/keychain.local.sh` に書く。
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/install.sh | bash
+eval "$(keychain --eval ~/.ssh/git_commit)"
 ```
 
-module を指定する場合は `bash -s --` 以降に渡す。
+### Follow-up
+
+`scripts/followup-wsl.sh` は `install.sh` と `scripts/cfg.py` から呼ばれない。
+
+この script が触るもの:
+
+- `chsh -s /bin/zsh`
+- `~/.ssh/git_commit`
+- `~/.ssh/git_commit.pub`
+- `~/.ssh/allowed_signers`
+- `git config --global user.name`
+- `git config --global user.email`
+- `git config --global user.signingkey`
+- `git config --global gpg.format`
+- `git config --global gpg.ssh.allowedSignersFile`
+- `git config --global commit.gpgsign`
+- `sudo usermod -aG docker`
+- `gh auth login`
+
+## Version Selection
+
+一部 module は install 時に latest release を取得する。
+
+該当例:
+
+- `modules/lazygit`
+- `modules/yazi`
+- `modules/nvim`
+
+`unless` の exit code が 0 の場合は再取得しない。つまり、初回実行時点の latest が残る。
+
+## Validation Commands
+
+module 読み込みと plan 表示:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/install.sh | bash -s -- zsh node
+python3 scripts/cfg.py plan [module ...]
 ```
 
-既定では `~/.local/share/cfg` に shallow clone / update して `scripts/apply.sh` を実行する。`CFG_COMMAND=plan` を指定すると `scripts/plan.sh` を実行する。
+shell syntax:
 
-clone 先は XDG Base Directory の user data 配下として `~/.local/share/cfg` を使う。project root を永続的に残すことで再実行、plan 確認、差分確認、更新ができるようにする。ホーム直下への一時 clone と実行後の自己削除は、削除対象の誤りや再実行性の低下を避けるため既定動作にしない。
-
-`install.sh` は `git` と `python3` の存在だけを確認する。bootstrap 内では apt などによる fallback install は行わない。
-
-### 7.1 path 展開
-
-- `src` は module directory からの相対 path とする
-- `dst`, `dirs.path`, `env.path_prepend` は `~` のみ展開する
-- `$HOME` などの shell 変数展開は parser 側では行わない
-- `files.dst` と `blocks.dst` の親 directory は executor が作成する
-
-### 7.2 mode validation
-
-`mode` は文字列だけを許可する。`"755"` または `"0755"` のような 3 桁・4 桁の octal 文字列のみ有効とする。数値 `755` は error とする。
-
-### 7.3 command 実行
-
-`commands[].run` と `commands[].unless` は `bash -c` で実行する。
-
-- `commands[].unless` は exit code 0 の場合に `run` を skip する
-- `commands[].unless` が非 0 の場合は `run` を実行する
-- `commands[].run` の working directory は module directory とする
-
-### 7.4 requires validation
-
-`commands[].requires` は executable name のみ許可する。`/`、空白、shell metacharacter を含む値は error とする。
-
-executor は `requires` から module 依存を推測しない。install 順序は `depends_on` のみで決める。
-
-### 7.5 blocks
-
-`blocks` は module 適用順で処理する。複数 block が同じ file に入る場合、末尾追加の順序も module 適用順に従う。
-
-同じ marker block が 0 個なら末尾に追加する。1 個なら置換する。2 個以上見つかった場合は、どれを置換すべきか曖昧なので error とする。
-
-### 7.6 backup
-
-MVP では backup を作らない。
-
-`files` は既存 file を上書きする。`blocks` は対象 file を直接更新する。破壊的変更を避けたい場合は、事前に `plan` で変更内容を確認する前提にする。
-
----
-
-## 8. 安全性ルール
-
-- backup は作らない
-- 既存 file の上書きや managed block 更新は `plan` で確認してから実行する
-- `mode` は octal 文字列で書く
-- secret、token、秘密鍵、署名鍵の実体は repo に置かない
-- install 先は原則 `$HOME` 配下に寄せる
-- dotfile の再読み込みを install 手順の前提にしない
-- 自動化できない作業は `notes` に書く
-- module は冪等性を意識し、必要に応じて `unless` を持つ
-- `commands[].requires` は install をしない。見えるはずの command を検証し、nvm のような shell integration が必要な場合だけ executor が読み込む
-
----
-
-## 9. 現在の module
-
-### `core`
-
-基本的な apt package を導入する。
-
-### `git`
-
-`git` package、`~/.gitconfig`、`~/.ssh` directory を管理する。
-
-`user.signingkey`、SSH 秘密鍵、GitHub 側 signing key 登録は手動作業として `notes` に残す。
-
-### `github-cli`
-
-GitHub CLI の apt repository を追加し、`gh` を導入する。
-
-これは通常の `packages.apt` だけでは表せない。公式手順では keyring 配置、apt source 追加、`apt update`、`apt install gh` が必要になる。
-
-MVP では `apt_repositories` のような専用 schema は作らず、この一連の処理を `commands` に書く。将来、同種の apt repository 追加が増えた時点で専用 schema を検討する。
-
-### `keychain`
-
-`keychain` package と shell 初期化 block を管理する。
-
-`keychain` は zsh 固有ではないため、`~/.zshrc` と `~/.bashrc` の両方へ managed block を追加する。
-
-### `cargo`
-
-rustup installer で Rust / Cargo を導入する。
-
-executor 実行中は `env.path_prepend` で `~/.cargo/bin` を PATH に追加する。対話 shell 用には `~/.zshrc` と `~/.bashrc` の両方へ Cargo PATH managed block を追加する。
-
-### `zsh`
-
-zsh、Oh My Zsh、plugin、oh-my-posh、theme、`.zshrc` 内の zsh 専用 managed block を管理する。
-
-NVM や keychain のように bash でも必要になる shell 共通設定は `zsh` module には置かず、それぞれ `node` module / `keychain` module で管理する。
-
-login shell の変更は手動作業として `notes` に残す。
-
-### `node`
-
-nvm を導入し、stable Node.js と npm を導入する。
-
-`~/.zshrc` と `~/.bashrc` の両方へ nvm 初期化 managed block を追加する。
-
-### `codex`
-
-`bubblewrap` と `@openai/codex` を導入する。npm が必要。
-
-### `docker`
-
-Docker installer を実行する。docker group 追加と再ログインは手動作業として `notes` に残す。
-
-### `devcontainer`
-
-`@devcontainers/cli` と `exec_devcontainer` 補助 command を導入する。`exec_devcontainer` は `mode: "755"` で配置する。
-
----
-
-## 10. 今後の拡張候補
-
-- apply 前 confirmation
-- artifact の `sha256` 検証
-- artifact / package の version 固定
-- apt repository を表す専用 schema
-- `pipx`, `cargo install`, `npm` package を表す専用 schema
-- verify command
-- minimal / full などの profile
+```sh
+bash -n install.sh scripts/apply.sh scripts/plan.sh scripts/followup-wsl.sh
+```

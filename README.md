@@ -1,45 +1,84 @@
 # cfg
 
-Linux 開発環境を再現するための設定リポジトリ
+Linux / WSL 用の個人設定 repo。
 
-`apt install`, `npm install`, `dotfilesの配置/更新` などを自動で適用するためのスクリプトを提供
+`install.sh` はこの repo を `CFG_DIR` に clone または update し、`scripts/apply.sh` を実行する。
 
-## Usage
+同じ環境で再実行する前提で書いている。`apply` は SSH 秘密鍵、`~/.ssh/allowed_signers`、GitHub login、docker group、default shell、keychain の個別 key 指定を上書きしない。
+
+## Install
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/install.sh | bash
 ```
 
+実行内容の表示だけ:
+
 ```sh
-# plan only (i.e. dry-run)
 curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/install.sh | CFG_COMMAND=plan bash
 ```
 
-- 以下のコマンドが必須:
-  - `git`
-  - `python3`
+`install.sh` 実行前に必要な command:
 
-### Manual follow-up
+- `git`
+- `python3`
 
-WSL で disposable な環境を作る場合は、apply 後の manual follow-up を補助するスクリプトを実行すると便利
+## Local Commands
 
-`followup-wsl` は `modules/*/module.toml` の `notes` にある manual follow-up を元に、`chsh`, Git commit signing 用 SSH key, `allowed_signers`, docker group, `gh auth login` を補助する。
+clone 済み repo では以下を使う。
 
-`apply` は disposable WSL 環境の初期状態を作るためのものとして扱う。`followup-wsl` 実行後に再度 `apply` すると、`allowed_signers` などの local state は初期状態で上書きされうる。
+```sh
+./scripts/plan.sh [module ...]
+./scripts/apply.sh [module ...]
+```
+
+`module ...` を省略すると全 module を読む。指定すると、その module と `depends_on` に書かれた module を読む。
+
+## Files Changed by apply
+
+`apply` が変更するもの:
+
+- `[[dirs]]` に書いた directory
+- `[[files]]` に書いた destination file 全体
+- `[[blocks]]` に書いた marker block 内
+- `[[commands]]` が実行する installer や setup command
+
+`apply` が変更しないもの:
+
+- SSH 秘密鍵
+- `~/.ssh/allowed_signers`
+- GitHub login
+- default shell
+- docker group membership
+- keychain に読み込ませる個別 key
+
+## Follow-up
+
+WSL で初回セットアップ後の手作業をまとめたい場合:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/scripts/followup-wsl.sh | bash
 ```
 
-全 follow-up section を選択する場合:
+確認を省略して全 section を選ぶ場合:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/scripts/followup-wsl.sh | bash -s -- --yes
 ```
 
-- `--yes` は各 section の選択確認を省略するだけで、`ssh-keygen`, `chsh`, `gh auth login` などのコマンド自体の対話は残る
+`followup-wsl.sh` は `scripts/cfg.py` から呼ばれない。`install.sh` からも呼ばれない。
 
-## Structure
+## Keychain Local File
 
-- `modules/`: 自動適用の対象
-- `extras/`: 自動適用とは別に単にgithubに保存しときたい設定
+keychain に読み込ませる鍵を指定する場合:
+
+```sh
+mkdir -p ~/.config/cfg
+printf '%s\n' 'eval "$(keychain --eval ~/.ssh/git_commit)"' > ~/.config/cfg/keychain.local.sh
+```
+
+`~/.config/cfg/keychain.local.sh` は `modules/keychain` の `[[files]]` に入れていないため、`apply` はこの file を作成・上書き・削除しない。
+
+## Module System
+
+`modules/*/module.toml` の読み方と実行順は [SPECIFICATION.md](SPECIFICATION.md) に書く。

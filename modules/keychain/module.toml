@@ -7,6 +7,11 @@ notes = ["Add SSH keys to keychain manually as needed."]
 apt = ["keychain"]
 
 
+[[dirs]]
+path = "~/.config/cfg"
+mode = "755"
+
+
 [[blocks]]
 src = "files/keychain.sh"
 dst = "~/.zshrc"

@@ -1,17 +1,7 @@
-[user]
-        name = konattsu
-        email = 139730998+konattsu@users.noreply.github.com
-        signingkey = ~/.ssh/git_commit.pub
 [init]
         defaultBranch = main
 [core]
         autocrlf = false
-[gpg]
-        format = ssh
-[gpg "ssh"]
-        allowedSignersFile = ~/.ssh/allowed_signers
-[commit]
-        gpgsign = true
 [alias]
         j = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\"
         j5 = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\" -n 3

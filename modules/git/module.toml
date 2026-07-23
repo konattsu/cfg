@@ -11,13 +11,20 @@ apt = ["git"]
 path = "~/.ssh"
 mode = "700"
 
+[[dirs]]
+path = "~/.config/cfg/git"
+mode = "755"
 
 [[files]]
-src = "files/.gitconfig"
-dst = "~/.gitconfig"
+src = "files/config"
+dst = "~/.config/cfg/git/config"
 mode = "644"
 
-[[files]]
-src = "files/allowed_signers"
-dst = "~/.ssh/allowed_signers"
-mode = "644"
+[[commands]]
+run = """
+git config --global --add include.path "$HOME/.config/cfg/git/config"
+"""
+unless = """
+git config --global --get-all include.path 2>/dev/null | grep -Fx "$HOME/.config/cfg/git/config"
+"""
+requires = ["git", "grep"]
