@@ -39,16 +39,16 @@ clone 済み repo で使う command:
 
 `install.sh` は以下を行う。
 
-1. `CFG_DIR` がなければ `git clone --depth 1 --branch "$CFG_BRANCH" "$CFG_REPO_URL" "$CFG_DIR"` を実行する
-2. `CFG_DIR/.git` があれば `git fetch`、branch switch、`git pull --ff-only --depth 1` を実行する
-3. `"$CFG_DIR/scripts/$CFG_COMMAND.sh" "$@"` を実行する
+1. `mktemp -d` で一時 directory を作る
+2. EXIT trap で一時 directory を削除する
+3. `git clone --depth 1 --branch "$CFG_BRANCH" "$CFG_REPO_URL" "<tmpdir>"` を実行する
+4. `"<tmpdir>/scripts/$CFG_COMMAND.sh" "$@"` を実行する
 
 default:
 
 ```sh
 CFG_REPO_URL=https://github.com/konattsu/cfg.git
 CFG_BRANCH=main
-CFG_DIR=$HOME/.local/share/cfg
 CFG_COMMAND=apply
 ```
 

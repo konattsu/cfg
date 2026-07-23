@@ -3,7 +3,6 @@ set -euo pipefail
 
 repo_url="${CFG_REPO_URL:-https://github.com/konattsu/cfg.git}"
 branch="${CFG_BRANCH:-main}"
-cfg_dir="${CFG_DIR:-$HOME/.local/share/cfg}"
 command="${CFG_COMMAND:-apply}"
 
 case "$command" in
@@ -23,25 +22,9 @@ if ((${#need_commands[@]} > 0)); then
   exit 1
 fi
 
-if [[ -e "$cfg_dir" && ! -d "$cfg_dir/.git" ]]; then
-  echo "error: CFG_DIR exists but is not a git repository: $cfg_dir" >&2
-  exit 1
-fi
+cfg_dir="$(mktemp -d)"
+trap 'rm -rf "$cfg_dir"' EXIT
 
-if [[ ! -d "$cfg_dir/.git" ]]; then
-  mkdir -p "$(dirname "$cfg_dir")"
-  git clone --depth 1 --branch "$branch" "$repo_url" "$cfg_dir"
-else
-  git -C "$cfg_dir" fetch --depth 1 origin "$branch:refs/remotes/origin/$branch"
-  current_branch="$(git -C "$cfg_dir" rev-parse --abbrev-ref HEAD)"
-  if [[ "$current_branch" != "$branch" ]]; then
-    if git -C "$cfg_dir" show-ref --verify --quiet "refs/heads/$branch"; then
-      git -C "$cfg_dir" switch "$branch"
-    else
-      git -C "$cfg_dir" switch --track "origin/$branch"
-    fi
-  fi
-  git -C "$cfg_dir" pull --ff-only --depth 1 origin "$branch"
-fi
+git clone --depth 1 --branch "$branch" "$repo_url" "$cfg_dir"
 
-exec "$cfg_dir/scripts/$command.sh" "$@"
+"$cfg_dir/scripts/$command.sh" "$@"

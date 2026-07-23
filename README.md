@@ -2,9 +2,9 @@
 
 Linux / WSL 用の個人設定 repo。
 
-`install.sh` はこの repo を `CFG_DIR` に clone または update し、`scripts/apply.sh` を実行する。
+`install.sh` はこの repo を一時 directory に clone し、`scripts/apply.sh` を実行する。
 
-同じ環境で再実行する前提で書いている。`apply` は SSH 秘密鍵、`~/.ssh/allowed_signers`、GitHub login、docker group、default shell、keychain の個別 key 指定を上書きしない。
+同じ環境で再実行する前提で書いている。一時 clone は実行後に削除する。`apply` は SSH 秘密鍵、`~/.ssh/allowed_signers`、GitHub login、docker group、default shell、keychain の個別 key 指定を上書きしない。
 
 ## Install
 
