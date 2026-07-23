@@ -4,6 +4,7 @@ set -euo pipefail
 yes=0
 git_commit_key="$HOME/.ssh/git_commit"
 allowed_signers="$HOME/.ssh/allowed_signers"
+keychain_local="$HOME/.config/cfg/keychain.local.sh"
 git_user_name="konattsu"
 git_user_email="139730998+konattsu@users.noreply.github.com"
 
@@ -14,8 +15,11 @@ Usage: followup-wsl.sh [--yes]
 Assist manual follow-up tasks after running install.sh on disposable WSL environments.
 
 Options:
-  -y, --yes   Select all follow-up sections without confirmation.
+  -y, --yes   Select all follow-up sections.
   -h, --help  Show this help.
+
+Without --yes, follow-up actions are prompted. When run as `curl ... | bash`,
+prompts read from /dev/tty because stdin is the script body.
 EOF
 }
 
@@ -51,9 +55,21 @@ confirm() {
     return 0
   fi
 
-  printf "%s [y/N] " "$prompt"
-  read -r answer
+  if [[ ! -r /dev/tty ]]; then
+    echo "decline: $prompt (/dev/tty is not available; use --yes to run)"
+    return 1
+  fi
+
+  printf "%s [y/N] " "$prompt" > /dev/tty
+  read -r answer < /dev/tty
   [[ "$answer" == "y" || "$answer" == "Y" ]]
+}
+
+user_at_machine() {
+  local user machine
+  user="${USER:-$(id -un 2>/dev/null || printf user)}"
+  machine="$(hostname -s 2>/dev/null || hostname 2>/dev/null || printf machine)"
+  printf '%s@%s\n' "$user" "$machine"
 }
 
 git_email() {
@@ -62,26 +78,46 @@ git_email() {
 
 ensure_allowed_signer() {
   local pub_key="$git_commit_key.pub"
-  local principal key_type key_body key_comment
+  local principal key_type key_body
 
   [[ -f "$pub_key" ]] || return
 
   principal="$(git_email)"
   [[ -n "$principal" ]] || principal="${USER:-user}@$(hostname)"
 
-  read -r key_type key_body key_comment <"$pub_key"
+  read -r key_type key_body _ <"$pub_key"
   touch "$allowed_signers"
   if awk -v key_type="$key_type" -v key_body="$key_body" '$2 == key_type && $3 == key_body { found = 1 } END { exit !found }' "$allowed_signers"; then
     chmod 644 "$allowed_signers"
     return
   fi
 
-  printf '%s %s %s' "$principal" "$key_type" "$key_body" >>"$allowed_signers"
-  if [[ -n "${key_comment:-}" ]]; then
-    printf ' %s' "$key_comment" >>"$allowed_signers"
-  fi
-  printf '\n' >>"$allowed_signers"
+  printf '%s %s %s\n' "$principal" "$key_type" "$key_body" >>"$allowed_signers"
   chmod 644 "$allowed_signers"
+}
+
+ensure_keychain_local_git_commit() {
+  local line
+
+  [[ -f "$git_commit_key" ]] || return
+
+  line="eval \"\$(keychain --eval $git_commit_key)\""
+  mkdir -p "$(dirname "$keychain_local")"
+  touch "$keychain_local"
+
+  if grep -Fxq "$line" "$keychain_local"; then
+    echo "ok: $git_commit_key is already listed in $keychain_local."
+  else
+    printf '%s\n' "$line" >>"$keychain_local"
+    echo "done: added $git_commit_key to $keychain_local."
+  fi
+
+  if command -v keychain >/dev/null 2>&1; then
+    eval "$(keychain --eval "$git_commit_key")"
+    echo "done: loaded $git_commit_key with keychain."
+  else
+    echo "skip: keychain command not found."
+  fi
 }
 
 run_zsh_followup() {
@@ -103,16 +139,15 @@ run_zsh_followup() {
 run_git_commit_key_followup() {
   section "git commit SSH key"
 
+  if ! confirm "Configure git commit SSH key, allowed_signers, git signing, and keychain?"; then
+    echo "skip: git commit SSH key follow-up skipped."
+    return
+  fi
+
   if [[ ! -f "$git_commit_key" ]]; then
-    if confirm "Generate ed25519 SSH key at $git_commit_key?"; then
-      local email
-      email="$(git_email)"
-      [[ -n "$email" ]] || email="${USER:-user}@$(hostname)"
-      ssh-keygen -t ed25519 -C "$email" -f "$git_commit_key"
-    else
-      echo "skip: SSH key generation skipped."
-      return
-    fi
+    local comment
+    comment="$(user_at_machine)"
+    ssh-keygen -t ed25519 -C "$comment" -f "$git_commit_key"
   else
     echo "ok: found $git_commit_key."
   fi
@@ -135,6 +170,8 @@ run_git_commit_key_followup() {
   else
     echo "skip: public key not found: $git_commit_key.pub"
   fi
+
+  ensure_keychain_local_git_commit
 }
 
 show_keychain_followup() {
@@ -192,16 +229,40 @@ run_docker_followup() {
 
 run_gh_followup() {
   section "GitHub CLI"
+  local ran_login=0
 
   if gh auth status --hostname github.com >/dev/null 2>&1; then
     echo "ok: gh is already authenticated for github.com."
+  elif confirm "Run gh auth login?"; then
+    gh auth login
+    ran_login=1
+  fi
+
+  if ((ran_login)) && gh auth status --hostname github.com >/dev/null 2>&1; then
+    if confirm "Run gh auth setup-git?"; then
+      gh auth setup-git
+    else
+      echo "skip: gh auth setup-git not run."
+    fi
+  elif ((ran_login)); then
+    echo "skip: gh auth setup-git requires gh authentication."
+  else
+    echo "skip: gh auth setup-git not needed."
+  fi
+}
+
+run_codex_followup() {
+  section "Codex"
+
+  if ! command -v codex >/dev/null 2>&1; then
+    echo "skip: codex command not found."
     return
   fi
 
-  if confirm "Run gh auth login?"; then
-    gh auth login
+  if confirm "Run codex for login?"; then
+    codex
   else
-    echo "skip: gh auth login not run."
+    echo "skip: codex not run."
   fi
 }
 
@@ -212,6 +273,7 @@ main() {
   run_git_commit_key_followup
   run_docker_followup
   run_gh_followup
+  run_codex_followup
   show_keychain_followup
 
   section "done"

@@ -60,6 +60,8 @@ WSL で初回セットアップ後の手作業をまとめたい場合:
 curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/scripts/followup-wsl.sh | bash
 ```
 
+`--yes` なしでは prompt する。`curl ... | bash` でも `/dev/tty` から入力を読むため対話できる。
+
 確認を省略して全 section を選ぶ場合:
 
 ```sh
