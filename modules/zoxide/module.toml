@@ -9,4 +9,4 @@ apt = ["zoxide"]
 [[blocks]]
 src = "files/zoxide.zsh"
 dst = "~/.zshrc"
-marker = "cfg:zoxide"
+marker = "moi:zoxide"

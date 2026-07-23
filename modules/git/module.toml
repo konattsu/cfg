@@ -11,19 +11,19 @@ path = "~/.ssh"
 mode = "700"
 
 [[dirs]]
-path = "~/.config/cfg/git"
+path = "~/.config/moi/git"
 mode = "755"
 
 [[files]]
 src = "files/config"
-dst = "~/.config/cfg/git/config"
+dst = "~/.config/moi/git/config"
 mode = "644"
 
 [[commands]]
 run = """
-git config --global --add include.path "$HOME/.config/cfg/git/config"
+git config --global --add include.path "$HOME/.config/moi/git/config"
 """
 unless = """
-git config --global --get-all include.path 2>/dev/null | grep -Fx "$HOME/.config/cfg/git/config"
+git config --global --get-all include.path 2>/dev/null | grep -Fx "$HOME/.config/moi/git/config"
 """
 requires = ["git", "grep"]

@@ -4,7 +4,7 @@ set -euo pipefail
 yes=0
 git_commit_key="$HOME/.ssh/git_commit"
 allowed_signers="$HOME/.ssh/allowed_signers"
-keychain_local="$HOME/.config/cfg/keychain.local.sh"
+keychain_local="$HOME/.config/moi/keychain.local.sh"
 git_user_name="konattsu"
 git_user_email="139730998+konattsu@users.noreply.github.com"
 
@@ -178,7 +178,7 @@ show_keychain_followup() {
   section "keychain"
 
   cat <<'EOF'
-Put local keychain settings in ~/.config/cfg/keychain.local.sh if you want keychain to load specific SSH keys.
+Put local keychain settings in ~/.config/moi/keychain.local.sh if you want keychain to load specific SSH keys.
 EOF
 
   if [[ -f "$git_commit_key" ]]; then

@@ -1,10 +1,14 @@
 # Module System
 
-この文書は `scripts/cfg.py` の現在の挙動を書く。願望や将来案は書かない。
+この文書は `scripts/moi.py` の現在の挙動を書く。願望や将来案は書かない。
+
+全てを詳細にドキュメント化する必要はない。
+重要な設計や、なぜそうしたかの理由などを書く。
+それっぽいドキュメントなどは意味がないだけではなく、認知負荷を増大させる負の資産であり、絶対に書かないこと。
 
 ## Process Exit
 
-`scripts/cfg.py` は以下の exit code を返す。
+`scripts/moi.py` は以下の exit code を返す。
 
 - `0`: `plan` または `apply` が最後まで到達した
 - `1`: module 定義の検証で `ConfigError` が投げられた
@@ -33,30 +37,42 @@ clone 済み repo で使う command:
 ./scripts/apply.sh [module ...]
 ```
 
-`scripts/plan.sh` は `python3 scripts/cfg.py plan "$@"` を実行する。
+`scripts/plan.sh` は `python3 scripts/moi.py plan "$@"` を実行する。
 
-`scripts/apply.sh` は `python3 scripts/cfg.py apply "$@"` を実行する。
+`scripts/apply.sh` は `python3 scripts/moi.py apply "$@"` を実行する。
 
 `install.sh` は以下を行う。
 
-1. `mktemp -d` で一時 directory を作る
-2. EXIT trap で一時 directory を削除する
-3. `git clone --depth 1 --branch "$CFG_BRANCH" "$CFG_REPO_URL" "<tmpdir>"` を実行する
-4. `"<tmpdir>/scripts/$CFG_COMMAND.sh" "$@"` を実行する
+1. `MOI_SELF_URL` から `moi.sh` を download する
+2. `MOI_SELF_PATH` に executable file として配置する
+3. `"$MOI_SELF_PATH" "$@"` を実行する
 
 default:
 
 ```sh
-CFG_REPO_URL=https://github.com/konattsu/cfg.git
-CFG_BRANCH=main
-CFG_COMMAND=apply
+MOI_SELF_URL=https://raw.githubusercontent.com/konattsu/moi/main/moi.sh
+MOI_SELF_PATH=~/.local/bin/moi
 ```
 
-`CFG_COMMAND` が `plan` / `apply` 以外の場合、`install.sh` は stderr に以下を出して exit code 2 を返す。
+`moi` は以下を行う。
 
-```text
-error: CFG_COMMAND must be 'plan' or 'apply'
+1. `MOI_NO_SELF_UPDATE=1` でなければ `MOI_SELF_URL` から自分自身を download する
+2. `MOI_SELF_PATH` と download 結果が違う場合、`MOI_SELF_PATH` を置き換えて `exec "$MOI_SELF_PATH" "$@"` で再実行する
+3. `mktemp -d` で一時 directory を作る
+4. EXIT trap で一時 directory を削除する
+5. `git clone --depth 1 --branch "$MOI_BRANCH" "$MOI_REPO_URL" "<tmpdir>"` を実行する
+6. `"<tmpdir>/scripts/<command>.sh" "$@"` を実行する
+
+`moi` default:
+
+```sh
+MOI_REPO_URL=https://github.com/konattsu/moi.git
+MOI_BRANCH=main
+MOI_SELF_URL=https://raw.githubusercontent.com/konattsu/moi/main/moi.sh
+MOI_SELF_PATH=~/.local/bin/moi
 ```
+
+`moi` は第一引数が `plan` / `apply` の場合、その command を実行する。第一引数がない場合、または第一引数が `plan` / `apply` 以外の場合は `apply` を実行する。
 
 ## Module Selection
 
@@ -153,7 +169,7 @@ path expansion:
 ```toml
 [[files]]
 src = "files/config"
-dst = "~/.config/cfg/git/config"
+dst = "~/.config/moi/git/config"
 mode = "644"
 ```
 
@@ -189,7 +205,7 @@ local 値を書き込む file を `[[files]]` に入れると、次回 `apply` �
 [[blocks]]
 src = "files/keychain.sh"
 dst = "~/.zshrc"
-marker = "cfg:keychain"
+marker = "moi:keychain"
 ```
 
 schema:
@@ -206,8 +222,8 @@ path expansion:
 marker line:
 
 ```sh
-# >>> cfg:keychain >>>
-# <<< cfg:keychain <<<
+# >>> moi:keychain >>>
+# <<< moi:keychain <<<
 ```
 
 `#` は固定。module 定義では変更できない。
@@ -265,7 +281,9 @@ schema:
 4. `unless` があれば `bash -c <unless>` を module directory で実行する
 5. `unless` の exit code が 0 なら `run` を実行しない
 6. `unless` の exit code が 0 以外なら `bash -c <run>` を module directory で実行する
-7. `run` が exit code 0 以外を返した場合、`scripts/cfg.py` は同じ exit code で停止する
+7. `run` が exit code 0 以外を返した場合、`scripts/moi.py` は同じ exit code で停止する
+
+`apply --ignore-unless` の場合、上記 4 と 5 を行わず、`commands[].run` を実行する。
 
 `requires` は module の順序を変更しない。順序は `depends_on` だけで決まる。
 
@@ -289,7 +307,7 @@ schema:
 2. 各 path の `~` / `~/...` を `dirs.path` と同じ規則で展開する
 3. executor process の `PATH` 先頭に追加する
 
-この変更は現在の `scripts/cfg.py` process と、その子 process にだけ効く。ユーザーの親 shell の `PATH` は変更しない。
+この変更は現在の `scripts/moi.py` process と、その子 process にだけ効く。ユーザーの親 shell の `PATH` は変更しない。
 
 ## notes
 
@@ -299,7 +317,7 @@ notes = ["Run `gh auth login` to authenticate with GitHub."]
 
 `notes` は `plan` / `apply` の最後に表示する文字列。実行しない。
 
-`scripts/cfg.py` は `scripts/followup-wsl.sh` の存在を参照しない。
+`scripts/moi.py` は `scripts/followup-wsl.sh` の存在を参照しない。
 
 ## State Boundaries
 
@@ -353,7 +371,7 @@ export GIT_EDITOR=vim
 `modules/git` は以下を配置する。
 
 ```text
-~/.config/cfg/git/config
+~/.config/moi/git/config
 ```
 
 この include 先で `core.editor = vim` を設定する。
@@ -361,7 +379,7 @@ export GIT_EDITOR=vim
 `modules/git` は以下を 1 回だけ追加する。既に同じ include path がある場合は追加しない。
 
 ```sh
-git config --global --add include.path "$HOME/.config/cfg/git/config"
+git config --global --add include.path "$HOME/.config/moi/git/config"
 ```
 
 Git user, email, signing key, `allowed_signers` は `modules/git` では設定しない。
@@ -372,10 +390,10 @@ Git user, email, signing key, `allowed_signers` は `modules/git` では設定�
 
 block の実行内容:
 
-1. `~/.config/cfg/keychain.local.sh` が readable なら `source` する
+1. `~/.config/moi/keychain.local.sh` が readable なら `source` する
 2. readable でなければ `eval "$(keychain --eval)"` を実行する
 
-個別 key を読み込ませる場合は `~/.config/cfg/keychain.local.sh` に書く。
+個別 key を読み込ませる場合は `~/.config/moi/keychain.local.sh` に書く。
 
 ```sh
 eval "$(keychain --eval ~/.ssh/git_commit)"
@@ -383,7 +401,7 @@ eval "$(keychain --eval ~/.ssh/git_commit)"
 
 ### Follow-up
 
-`scripts/followup-wsl.sh` は `install.sh` と `scripts/cfg.py` から呼ばれない。
+`scripts/followup-wsl.sh` は `install.sh` と `scripts/moi.py` から呼ばれない。
 
 この script が触るもの:
 
@@ -417,11 +435,11 @@ eval "$(keychain --eval ~/.ssh/git_commit)"
 module 読み込みと plan 表示:
 
 ```sh
-python3 scripts/cfg.py plan [module ...]
+python3 scripts/moi.py plan [module ...]
 ```
 
 shell syntax:
 
 ```sh
-bash -n install.sh scripts/apply.sh scripts/plan.sh scripts/followup-wsl.sh
+bash -n install.sh moi.sh scripts/apply.sh scripts/plan.sh scripts/followup-wsl.sh
 ```

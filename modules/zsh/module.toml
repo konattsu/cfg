@@ -10,12 +10,12 @@ apt = ["fontconfig", "unzip", "vim", "zsh"]
 [[blocks]]
 src = "files/zshrc.sh"
 dst = "~/.zshrc"
-marker = "cfg:zsh"
+marker = "moi:zsh"
 
 [[blocks]]
 src = "files/editor.sh"
 dst = "~/.zshrc"
-marker = "cfg:zsh:editor"
+marker = "moi:zsh:editor"
 
 
 [[files]]

@@ -1,4 +1,4 @@
-# cfg-managed Codex execpolicy rules.
+# moi-managed Codex execpolicy rules.
 
 prefix_rule(
     pattern = ["docker", "ps"],

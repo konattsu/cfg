@@ -5,13 +5,13 @@ depends_on = ["zsh", "bash"]
 [[blocks]]
 src = "files/nvm.zsh.sh"
 dst = "~/.zshrc"
-marker = "cfg:node:nvm"
+marker = "moi:node:nvm"
 
 
 [[blocks]]
 src = "files/nvm.bash.sh"
 dst = "~/.bashrc"
-marker = "cfg:node:nvm"
+marker = "moi:node:nvm"
 
 
 [[commands]]

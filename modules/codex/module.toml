@@ -12,8 +12,8 @@ mode = "700"
 
 
 [[files]]
-src = "files/rules/cfg.rules"
-dst = "~/.codex/rules/cfg.rules"
+src = "files/rules/moi.rules"
+dst = "~/.codex/rules/moi.rules"
 mode = "600"
 
 

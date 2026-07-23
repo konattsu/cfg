@@ -8,17 +8,17 @@ apt = ["keychain"]
 
 
 [[dirs]]
-path = "~/.config/cfg"
+path = "~/.config/moi"
 mode = "755"
 
 
 [[blocks]]
 src = "files/keychain.sh"
 dst = "~/.zshrc"
-marker = "cfg:keychain"
+marker = "moi:keychain"
 
 
 [[blocks]]
 src = "files/keychain.sh"
 dst = "~/.bashrc"
-marker = "cfg:keychain"
+marker = "moi:keychain"

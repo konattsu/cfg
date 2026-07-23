@@ -493,7 +493,7 @@ def apply_artifacts(module: Module, dry_run: bool) -> None:
         if dry_run:
             continue
         dst.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="cfg-artifact-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="moi-artifact-") as tmp:
             tmp_dir = Path(tmp)
             download = tmp_dir / "download"
             urllib.request.urlretrieve(url, download)
@@ -537,13 +537,13 @@ def find_extracted_binary(root: Path, name: str) -> Path:
     return matches[0]
 
 
-def apply_commands(module: Module, dry_run: bool) -> None:
+def apply_commands(module: Module, dry_run: bool, ignore_unless: bool = False) -> None:
     for idx, command in enumerate(module.commands, start=1):
         for required in command.requires:
             print(f"require {required}")
             if not dry_run:
                 ensure_command(required)
-        if command.unless:
+        if command.unless and not ignore_unless:
             print(f"unless command[{idx}]")
             if not dry_run:
                 result = run_bash(command.unless, module.path, check=False)
@@ -590,7 +590,7 @@ def print_plan(modules: list[Module]) -> None:
             print(f"  - {note}")
 
 
-def apply(modules: list[Module]) -> None:
+def apply(modules: list[Module], ignore_unless: bool = False) -> None:
     packages = collect_apt_packages(modules)
     if packages:
         print("apt update")
@@ -606,7 +606,7 @@ def apply(modules: list[Module]) -> None:
         apply_artifacts(module, dry_run=False)
         apply_files(module, dry_run=False)
         apply_blocks(module, dry_run=False)
-        apply_commands(module, dry_run=False)
+        apply_commands(module, dry_run=False, ignore_unless=ignore_unless)
 
     notes = [note for module in modules for note in module.notes]
     if notes:
@@ -617,11 +617,17 @@ def apply(modules: list[Module]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="cfg module planner/applicator")
+    parser = argparse.ArgumentParser(description="moi module planner/applicator")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    for name in ("plan", "apply"):
-        sub = subparsers.add_parser(name)
-        sub.add_argument("modules", nargs="*", help="module names; defaults to all modules")
+    plan_parser = subparsers.add_parser("plan")
+    plan_parser.add_argument("modules", nargs="*", help="module names; defaults to all modules")
+    apply_parser = subparsers.add_parser("apply")
+    apply_parser.add_argument(
+        "--ignore-unless",
+        action="store_true",
+        help="run commands without evaluating commands[].unless",
+    )
+    apply_parser.add_argument("modules", nargs="*", help="module names; defaults to all modules")
     args = parser.parse_args()
 
     try:
@@ -630,7 +636,7 @@ def main() -> int:
         if args.command == "plan":
             print_plan(ordered)
         else:
-            apply(ordered)
+            apply(ordered, ignore_unless=args.ignore_unless)
     except ConfigError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1

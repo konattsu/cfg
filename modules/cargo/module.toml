@@ -5,12 +5,12 @@ depends_on = ["zsh", "bash"]
 [[blocks]]
 src = "files/cargo.sh"
 dst = "~/.zshrc"
-marker = "cfg:cargo"
+marker = "moi:cargo"
 
 [[blocks]]
 src = "files/cargo.sh"
 dst = "~/.bashrc"
-marker = "cfg:cargo"
+marker = "moi:cargo"
 
 
 [[commands]]

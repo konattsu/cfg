@@ -5,5 +5,6 @@
         editor = vim
 [alias]
         j = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\"
-        j5 = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\" -n 3
+        j3 = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\" -n 3
+        j5 = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\" -n 5
         j10 = log --graph --oneline --all --decorate --color --pretty=format:\"%C(auto)%h%Creset - %C(bold blue)%an%Creset, %C(green)%ar%Creset %C(auto)%d%Creset %n    %s\" -n 10
