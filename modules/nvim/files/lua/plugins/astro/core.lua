@@ -28,11 +28,18 @@ return {
     },
     options = {
       opt = {
+        breakindent = true,
+        cursorline = true,
+        expandtab = true,
         guicursor = "c-i:hor20",
+        linebreak = true,
         relativenumber = false,
         number = true,
+        shiftwidth = 2,
         spell = false,
+        softtabstop = 2,
         signcolumn = "yes",
+        tabstop = 2,
         wrap = false,
       },
       g = {},
@@ -41,6 +48,14 @@ return {
       n = {
         ["q"] = { "<cmd>quit<cr>", desc = "Quit window" },
         ["<F2>"] = { "q", desc = "Record macro" },
+        ["<A-z>"] = {
+          function()
+            vim.wo.wrap = not vim.wo.wrap
+            vim.wo.linebreak = vim.wo.wrap
+            vim.wo.breakindent = vim.wo.wrap
+          end,
+          desc = "Toggle word wrap",
+        },
         ["<Tab>"] = { function() require("astrocore.buffer").nav(vim.v.count1) end, desc = "Next buffer" },
         ["<S-Tab>"] = { function() require("astrocore.buffer").nav(-vim.v.count1) end, desc = "Previous buffer" },
 

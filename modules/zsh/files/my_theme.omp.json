@@ -18,7 +18,7 @@
           "type": "path",
           "style": "powerline",
           "foreground": "#42FFFF",
-          "template": " <u>`{{ .Path }}`</u>",
+          "template": " <u>{{ .Path }}</u>",
           "options": {
             "folder_separator_icon": "/",
             "style": "agnoster"
