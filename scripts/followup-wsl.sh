@@ -78,21 +78,25 @@ git_email() {
 
 ensure_allowed_signer() {
   local pub_key="$git_commit_key.pub"
-  local principal key_type key_body
+  local principal key_type key_body key_comment
 
   [[ -f "$pub_key" ]] || return
 
   principal="$(git_email)"
   [[ -n "$principal" ]] || principal="${USER:-user}@$(hostname)"
 
-  read -r key_type key_body _ <"$pub_key"
+  read -r key_type key_body key_comment <"$pub_key"
   touch "$allowed_signers"
   if awk -v key_type="$key_type" -v key_body="$key_body" '$2 == key_type && $3 == key_body { found = 1 } END { exit !found }' "$allowed_signers"; then
     chmod 644 "$allowed_signers"
     return
   fi
 
-  printf '%s %s %s\n' "$principal" "$key_type" "$key_body" >>"$allowed_signers"
+  if [[ -n "$key_comment" ]]; then
+    printf '%s %s %s %s\n' "$principal" "$key_type" "$key_body" "$key_comment" >>"$allowed_signers"
+  else
+    printf '%s %s %s\n' "$principal" "$key_type" "$key_body" >>"$allowed_signers"
+  fi
   chmod 644 "$allowed_signers"
 }
 

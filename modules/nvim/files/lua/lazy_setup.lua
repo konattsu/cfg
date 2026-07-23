@@ -1,7 +1,7 @@
 require("lazy").setup({
   {
     "AstroNvim/AstroNvim",
-    version = "2026.05.05-84a231c", -- AstroNvim snapshot; bump when you move to a new release
+    version = "^6", -- Track stable AstroNvim 6.x releases; major upgrades remain explicit
     import = "astronvim.plugins",
     opts = { -- AstroNvim options must be set here with the `import` key
       mapleader = " ", -- This ensures the leader key must be configured before Lazy is set up

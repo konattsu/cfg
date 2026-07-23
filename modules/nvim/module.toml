@@ -36,11 +36,6 @@ dst = "~/.config/nvim/init.lua"
 mode = "644"
 
 [[files]]
-src = "files/lazy-lock.json"
-dst = "~/.config/nvim/lazy-lock.json"
-mode = "644"
-
-[[files]]
 src = "files/lua/community.lua"
 dst = "~/.config/nvim/lua/community.lua"
 mode = "644"
