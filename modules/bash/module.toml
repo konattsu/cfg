@@ -1,0 +1,12 @@
+name = "bash"
+depends_on = ["core"]
+
+
+[packages]
+apt = ["bash", "vim"]
+
+
+[[blocks]]
+src = "files/editor.sh"
+dst = "~/.bashrc"
+marker = "cfg:bash:editor"

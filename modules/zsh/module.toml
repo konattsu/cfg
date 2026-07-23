@@ -4,13 +4,18 @@ notes = ["Run `chsh -s /bin/zsh` to set zsh as your default shell."]
 
 
 [packages]
-apt = ["fontconfig", "unzip", "zsh"]
+apt = ["fontconfig", "unzip", "vim", "zsh"]
 
 
 [[blocks]]
 src = "files/zshrc.sh"
 dst = "~/.zshrc"
 marker = "cfg:zsh"
+
+[[blocks]]
+src = "files/editor.sh"
+dst = "~/.zshrc"
+marker = "cfg:zsh:editor"
 
 
 [[files]]

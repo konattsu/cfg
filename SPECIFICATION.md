@@ -323,6 +323,29 @@ notes = ["Run `gh auth login` to authenticate with GitHub."]
 
 ## Current Module Decisions
 
+### Module Dependencies
+
+`depends_on` は module の成果物に必要な前提だけを書く。
+
+- `~/.zshrc` に block を入れる module は `zsh` に依存する
+- `~/.bashrc` に block を入れる module は `bash` に依存する
+- shell completion など shell 別の file を配置・生成する module は該当 shell module に依存する
+- command 実行時だけ必要な executable は `depends_on` ではなく `requires` に書く
+
+### Shell Editors
+
+`modules/zsh` は `~/.zshrc` に editor 用 marker block を入れる。
+
+`modules/bash` は `~/.bashrc` に editor 用 marker block を入れる。
+
+block の実行内容:
+
+```sh
+export EDITOR=vim
+export VISUAL=vim
+export GIT_EDITOR=vim
+```
+
 ### Git
 
 `modules/git` は `~/.gitconfig` を `[[files]]` で配置しない。
@@ -332,6 +355,8 @@ notes = ["Run `gh auth login` to authenticate with GitHub."]
 ```text
 ~/.config/cfg/git/config
 ```
+
+この include 先で `core.editor = vim` を設定する。
 
 `modules/git` は以下を 1 回だけ追加する。既に同じ include path がある場合は追加しない。
 

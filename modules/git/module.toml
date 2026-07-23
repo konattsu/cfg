@@ -1,10 +1,9 @@
 name = "git"
-depends_on = ["zsh"]
 notes = ["Remember to set the ssh key for signing commits."]
 
 
 [packages]
-apt = ["git"]
+apt = ["git", "vim"]
 
 
 [[dirs]]

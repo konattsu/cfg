@@ -1,5 +1,5 @@
 name = "node"
-depends_on = ["zsh"]
+depends_on = ["zsh", "bash"]
 
 
 [[blocks]]

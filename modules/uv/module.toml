@@ -1,5 +1,5 @@
 name = "uv"
-depends_on = ["core", "zsh"]
+depends_on = ["core", "zsh", "bash"]
 
 
 [[dirs]]
