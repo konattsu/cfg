@@ -1,5 +1,5 @@
 # --- Less ---
-export LESS = "-R -F"
+export LESS="-R -F"
 
 # --- Editor ---
 export EDITOR=vim
