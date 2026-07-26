@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
   "version": 4,
   "final_space": true,
-  "console_title_template": "{{.UserName}}@{{.HostName}} in {{ .PWD }}",
+  "console_title_template": "{{ .UserName }}@{{ .HostName }} in {{ .PWD }}",
   "blocks": [
     {
       "type": "prompt",
@@ -65,8 +65,12 @@
       "segments": [
         {
           "type": "status",
-          "style": "powerline",
-          "template": "{{ if .Error }}<#E6325F>{{ else }}<#2887FF>{{ end }} $</#2887FF>",
+          "style": "plain",
+          "foreground_templates": [
+            "{{ if .Error }}#E6325F{{ end }}",
+            "{{ if not .Error }}#2887FF{{ end }}"
+          ],
+          "template": "$",
           "options": {
             "always_enabled": true
           }
