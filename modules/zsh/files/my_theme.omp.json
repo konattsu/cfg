@@ -20,6 +20,7 @@
           "foreground": "#42FFFF",
           "template": " <u>{{ .Path }}</u>",
           "options": {
+            "max_width": 30,
             "folder_separator_icon": "/",
             "style": "agnoster"
           }
@@ -28,7 +29,7 @@
           "type": "git",
           "style": "powerline",
           "foreground": "#C8C3DC",
-          "template": " {{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} *{{ .Working.String }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} +{{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} stash:{{ .StashCount }}{{ end }} ",
+          "template": " {{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} *{{ .Working.String }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} +{{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} stash:{{ .StashCount }}{{ end }}",
           "options": {
             "fetch_status": true,
             "fetch_upstream_icon": false
