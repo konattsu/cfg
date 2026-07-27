@@ -45,18 +45,6 @@ moi apply [module ...]
 モジュールを省略するとすべてを対象にする.
 指定した場合は、そのモジュールと `depends_on` の依存先を対象にする.
 
-```sh
-moi plan nvim
-moi apply nvim
-```
-
-launcherの自己更新を止める場合は `MOI_NO_SELF_UPDATE=1` を指定する.
-一時cloneは引き続き行われる.
-
-```sh
-MOI_NO_SELF_UPDATE=1 moi apply nvim
-```
-
 編集中のローカルcheckoutをそのまま実行する場合はlauncherを経由しない.
 
 ```sh
@@ -72,6 +60,7 @@ SSH秘密鍵, `~/.ssh/allowed_signers`, GitHub login, default shell, docker grou
 
 ## その他
 
-- WSL初回セットアップ後の対話的な作業には `scripts/followup-wsl.sh` を使う
+- WSL初回セットアップ後の対話的な作業には `scripts/followup-wsl.sh` が便利
+  - `curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/scripts/followup-wsl.sh | bash -s -- --yes`
 - Neovim本体, AstroNvim, プラグインの更新方法は [docs/nvim.md](docs/nvim.md) を参照
 - モジュール定義の仕様は [SPECIFICATION.md](SPECIFICATION.md) を参照
