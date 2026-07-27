@@ -67,8 +67,8 @@
           "type": "status",
           "style": "plain",
           "foreground_templates": [
-            "{{ if .Error }}#E6325F{{ end }}",
-            "{{ if not .Error }}#2887FF{{ end }}"
+            "{{ if .Error }}#FF8184{{ end }}",
+            "{{ if not .Error }}#54A2E5{{ end }}"
           ],
           "template": "$",
           "options": {
