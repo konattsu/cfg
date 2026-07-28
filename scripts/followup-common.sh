@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  echo "error: followup-common.sh is a shared library; run followup-debian.sh or followup-arch.sh instead." >&2
+  exit 1
+fi
 
 yes=0
 git_commit_key="$HOME/.ssh/git_commit"
@@ -7,41 +11,7 @@ allowed_signers="$HOME/.ssh/allowed_signers"
 keychain_local="$HOME/.config/moi/keychain.local.sh"
 git_user_name="konattsu"
 git_user_email="139730998+konattsu@users.noreply.github.com"
-
-usage() {
-  cat <<'EOF'
-Usage: followup-wsl.sh [--yes]
-
-Assist manual follow-up tasks after running install.sh on disposable WSL environments.
-
-Options:
-  -y, --yes   Select all follow-up sections.
-  -h, --help  Show this help.
-
-Without --yes, follow-up actions are prompted. When run as `curl ... | bash`,
-prompts read from /dev/tty because stdin is the script body.
-EOF
-}
-
-parse_args() {
-  while (($# > 0)); do
-    case "$1" in
-      -y|--yes)
-        yes=1
-        ;;
-      -h|--help)
-        usage
-        exit 0
-        ;;
-      *)
-        echo "error: unknown option: $1" >&2
-        usage >&2
-        exit 2
-        ;;
-    esac
-    shift
-  done
-}
+manual_steps=()
 
 section() {
   printf '\n==> %s\n' "$1"
@@ -63,6 +33,10 @@ confirm() {
   printf "%s [y/N] " "$prompt" > /dev/tty
   read -r answer < /dev/tty
   [[ "$answer" == "y" || "$answer" == "Y" ]]
+}
+
+add_manual_step() {
+  manual_steps+=("$1")
 }
 
 user_at_machine() {
@@ -132,12 +106,8 @@ run_zsh_followup() {
     return
   fi
 
-  if confirm "Run chsh -s /bin/zsh?"; then
-    chsh -s /bin/zsh
-    echo "done: restart the WSL session for the shell change to take effect."
-  else
-    echo "skip: zsh default shell unchanged."
-  fi
+  add_manual_step "Run \`chsh -s /bin/zsh\`, then restart the login session."
+  echo "manual: default shell change is left for the final follow-up."
 }
 
 run_git_commit_key_followup() {
@@ -215,9 +185,7 @@ EOF
   done
 }
 
-run_docker_followup() {
-  section "docker"
-
+run_docker_group_followup() {
   if id -nG | tr ' ' '\n' | grep -qx docker; then
     echo "ok: current user is already in the docker group."
     return
@@ -225,15 +193,47 @@ run_docker_followup() {
 
   if confirm "Run sudo usermod -aG docker ${USER:-$(id -un)}?"; then
     sudo usermod -aG docker "${USER:-$(id -un)}"
-    echo "done: restart the WSL session for the docker group change to take effect."
+    echo "done: restart the login session for the docker group change to take effect."
   else
     echo "skip: docker group unchanged."
   fi
 }
 
+run_docker_followup_debian() {
+  section "docker"
+  run_docker_group_followup
+}
+
+run_docker_followup_arch() {
+  section "docker"
+
+  if command -v systemctl >/dev/null 2>&1; then
+    if systemctl is-enabled --quiet docker.service 2>/dev/null && systemctl is-active --quiet docker.service 2>/dev/null; then
+      echo "ok: docker.service is enabled and active."
+    elif confirm "Run sudo systemctl enable --now docker.service?"; then
+      sudo systemctl enable --now docker.service
+      echo "done: enabled and started docker.service."
+    else
+      echo "skip: docker.service unchanged."
+      add_manual_step "Run \`sudo systemctl enable --now docker.service\` if Docker should start automatically."
+    fi
+  else
+    echo "manual: systemctl command not found."
+    add_manual_step "Enable and start docker.service if this Arch environment uses systemd."
+  fi
+
+  run_docker_group_followup
+}
+
 run_gh_followup() {
   section "GitHub CLI"
   local ran_login=0
+
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "skip: gh command not found."
+    add_manual_step "After installing GitHub CLI, run \`gh auth login\` and then \`gh auth setup-git\`."
+    return
+  fi
 
   if gh auth status --hostname github.com >/dev/null 2>&1; then
     echo "ok: gh is already authenticated for github.com."
@@ -259,29 +259,30 @@ run_codex_followup() {
   section "Codex"
 
   if ! command -v codex >/dev/null 2>&1; then
-    echo "skip: codex command not found."
+    add_manual_step "After installing Codex, run \`codex\` in an interactive shell and complete login."
+    echo "manual: codex command not found yet."
     return
   fi
 
-  if confirm "Run codex for login?"; then
-    codex
-  else
-    echo "skip: codex not run."
+  add_manual_step "Run \`codex\` in an interactive shell and complete login."
+  echo "manual: Codex login is left for the final follow-up."
+}
+
+show_manual_steps() {
+  section "manual follow-up"
+
+  if ((${#manual_steps[@]} == 0)); then
+    echo "No manual steps remain."
+    return
   fi
+
+  local step
+  for step in "${manual_steps[@]}"; do
+    echo "- $step"
+  done
 }
 
-main() {
-  parse_args "$@"
-
-  run_zsh_followup
-  run_git_commit_key_followup
-  run_docker_followup
-  run_gh_followup
-  run_codex_followup
-  show_keychain_followup
-
+print_done() {
   section "done"
-  echo "If chsh or docker group membership changed, restart the WSL session."
+  echo "If the default shell or docker group membership changed, restart the login session."
 }
-
-main "$@"

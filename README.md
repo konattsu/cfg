@@ -77,7 +77,8 @@ SSH秘密鍵, `~/.ssh/allowed_signers`, GitHub login, default shell, docker grou
 
 ## その他
 
-- WSL初回セットアップ後の対話的な作業には `scripts/followup-wsl.sh` が便利
-  - `curl -fsSL https://raw.githubusercontent.com/konattsu/cfg/main/scripts/followup-wsl.sh | bash -s -- --yes`
+- 初回セットアップ後の対話的な作業には以下が便利
+  - debian: `curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/scripts/followup-debian.sh | bash -s -- --yes`
+  - arch: `curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/scripts/followup-arch.sh | bash -s -- --yes`
 - Neovim本体, AstroNvim, プラグインの更新方法は [docs/nvim.md](docs/nvim.md) を参照
 - モジュール定義の仕様は [SPECIFICATION.md](SPECIFICATION.md) を参照

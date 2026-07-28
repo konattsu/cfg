@@ -366,7 +366,7 @@ followups = ["Run `gh auth login` to authenticate with GitHub."]
 - `--no-followups` を指定した場合は表示しない
 - 通常の `plan` / `apply` では表示しない
 
-`scripts/moi.py` は `scripts/followup-wsl.sh` の存在を参照しない。
+`scripts/moi.py` は follow-up scripts の存在を参照しない。
 
 ## State Boundaries
 
@@ -450,11 +450,23 @@ eval "$(keychain --eval ~/.ssh/git_commit)"
 
 ### Follow-up
 
-`scripts/followup-wsl.sh` は `install.sh` と `scripts/moi.py` から呼ばれない。
+follow-up scripts は `install.sh` と `scripts/moi.py` から呼ばれない。
 
-この script が触るもの:
+entry point:
 
-- `chsh -s /bin/zsh`
+- `scripts/followup-debian.sh`
+- `scripts/followup-arch.sh`
+
+shared library:
+
+- `scripts/followup-common.sh`
+
+placeholder:
+
+- `scripts/followup-arch-desktop.sh`
+
+この script 群が触るもの:
+
 - `~/.ssh/git_commit`
 - `~/.ssh/git_commit.pub`
 - `~/.ssh/allowed_signers`
@@ -465,7 +477,13 @@ eval "$(keychain --eval ~/.ssh/git_commit)"
 - `git config --global gpg.ssh.allowedSignersFile`
 - `git config --global commit.gpgsign`
 - `sudo usermod -aG docker`
+- `sudo systemctl enable --now docker.service` (`scripts/followup-arch.sh` only)
 - `gh auth login`
+
+この script は以下を実行せず、最後に手動 follow-up として表示する。
+
+- `chsh -s /bin/zsh`
+- `codex`
 
 ## Version Selection
 
@@ -490,5 +508,5 @@ python3 scripts/moi.py plan [module ...]
 shell syntax:
 
 ```sh
-bash -n install.sh moi.sh scripts/apply.sh scripts/plan.sh scripts/followup-wsl.sh
+bash -n install.sh moi.sh scripts/apply.sh scripts/plan.sh scripts/followup-common.sh scripts/followup-debian.sh scripts/followup-arch.sh scripts/followup-arch-desktop.sh
 ```
