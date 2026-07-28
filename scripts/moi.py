@@ -690,8 +690,8 @@ def install_packages(packages: list[str], platform: str) -> None:
         run_bash(f"sudo apt install -y {quoted}", REPO_ROOT, check=True)
         return
     if platform == "arch":
-        print(f"pacman -Syu --needed {quoted}")
-        run_bash(f"sudo pacman -Syu --needed {quoted}", REPO_ROOT, check=True)
+        print(f"pacman -Syu --needed --noconfirm {quoted}")
+        run_bash(f"sudo pacman -Syu --needed --noconfirm {quoted}", REPO_ROOT, check=True)
         return
     fail(f"unsupported platform: {platform}")
 

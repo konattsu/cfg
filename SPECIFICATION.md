@@ -163,7 +163,7 @@ sudo apt install -y <packages...>
 Arch:
 
 ```sh
-sudo pacman -Syu --needed <packages...>
+sudo pacman -Syu --needed --noconfirm <packages...>
 ```
 
 `plan` は package 名を表示するだけで、package manager command を実行しない。
