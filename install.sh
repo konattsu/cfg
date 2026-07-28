@@ -16,4 +16,4 @@ trap 'rm -f "$tmp"' EXIT
 curl -fsSL "$self_url" -o "$tmp"
 install -m 755 "$tmp" "$self_path"
 
-exec "$self_path" "$@"
+MOI_FIRST_INSTALL=1 exec "$self_path" "$@"

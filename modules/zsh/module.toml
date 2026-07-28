@@ -1,6 +1,6 @@
 name = "zsh"
 depends_on = ["core"]
-notes = ["Run `chsh -s /bin/zsh` to set zsh as your default shell."]
+followups = ["Run `chsh -s /bin/zsh` to set zsh as your default shell."]
 
 
 [packages]

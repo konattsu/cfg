@@ -101,7 +101,7 @@ top-level で読める key:
 
 - `name`
 - `depends_on`
-- `notes`
+- `followups`
 - `packages`
 - `dirs`
 - `files`
@@ -351,13 +351,20 @@ schema:
 
 この変更は現在の `scripts/moi.py` process と、その子 process にだけ効く。ユーザーの親 shell の `PATH` は変更しない。
 
-## notes
+## followups
 
 ```toml
-notes = ["Run `gh auth login` to authenticate with GitHub."]
+followups = ["Run `gh auth login` to authenticate with GitHub."]
 ```
 
-`notes` は `plan` / `apply` の最後に表示する文字列。実行しない。
+`followups` は手動の後続作業として表示する文字列。実行しない。
+
+表示条件:
+
+- `install.sh` 経由の初回導入では表示する
+- `--show-followups` を指定した場合は表示する
+- `--no-followups` を指定した場合は表示しない
+- 通常の `plan` / `apply` では表示しない
 
 `scripts/moi.py` は `scripts/followup-wsl.sh` の存在を参照しない。
 

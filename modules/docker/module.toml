@@ -1,5 +1,5 @@
 name = "docker"
-notes = [
+followups = [
     "Run `sudo usermod -aG docker $USER` to add your user to the docker group.",
 ]
 

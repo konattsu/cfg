@@ -1,5 +1,5 @@
 name = "git"
-notes = ["Remember to set the ssh key for signing commits."]
+followups = ["Remember to set the ssh key for signing commits."]
 
 
 [packages]

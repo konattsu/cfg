@@ -35,8 +35,8 @@ curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh | bash
 ## Usage
 
 ```sh
-moi plan [module ...]
-moi apply [module ...]
+moi plan [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
+moi apply [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
 ```
 
 `plan` は予定されるモジュール, パッケージ, ファイル, コマンドを表示するだけで変更しない.
@@ -51,6 +51,15 @@ moi apply [module ...]
 ```sh
 moi plan --platform arch
 moi plan --platform debian
+```
+
+手動の後続作業は `install.sh` 経由の初回導入では自動表示される.
+通常の `moi plan` / `moi apply` では表示しない.
+必要な場合は明示指定する.
+
+```sh
+moi plan --show-followups
+moi apply --show-followups
 ```
 
 編集中のローカルcheckoutをそのまま実行する場合はlauncherを経由しない.

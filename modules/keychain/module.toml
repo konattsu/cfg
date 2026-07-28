@@ -1,6 +1,6 @@
 name = "keychain"
 depends_on = ["zsh", "bash"]
-notes = ["Add SSH keys to keychain manually as needed."]
+followups = ["Add SSH keys to keychain manually as needed."]
 
 
 [packages]

@@ -1,5 +1,5 @@
 name = "github-cli"
-notes = ["Run `gh auth login` to authenticate with GitHub."]
+followups = ["Run `gh auth login` to authenticate with GitHub."]
 
 
 [packages]

@@ -56,7 +56,7 @@ class Module:
     commands: list[Command] = field(default_factory=list)
     env_path_prepend: list[str] = field(default_factory=list)
     depends_on: list[str] = field(default_factory=list)
-    notes: list[str] = field(default_factory=list)
+    followups: list[str] = field(default_factory=list)
 
 
 def fail(message: str) -> None:
@@ -143,7 +143,7 @@ def parse_module(module_dir: Path) -> Module:
         "commands",
         "env",
         "depends_on",
-        "notes",
+        "followups",
     }
     unknown = sorted(set(data) - allowed)
     if unknown:
@@ -185,7 +185,7 @@ def parse_module(module_dir: Path) -> Module:
             validate_path_no_shell_expansion(item, f"{path}: env.path_prepend[{i}]")
 
     depends_on = require_string_list(data.get("depends_on"), f"{path}: depends_on")
-    notes = require_string_list(data.get("notes"), f"{path}: notes")
+    followups = require_string_list(data.get("followups"), f"{path}: followups")
 
     return Module(
         name=name,
@@ -198,7 +198,7 @@ def parse_module(module_dir: Path) -> Module:
         commands=commands,
         env_path_prepend=env_path_prepend,
         depends_on=depends_on,
-        notes=notes,
+        followups=followups,
     )
 
 
@@ -625,7 +625,23 @@ def apply_commands(module: Module, dry_run: bool, platform: str, ignore_unless: 
             run_bash(command.run, module.path, check=True)
 
 
-def print_plan(modules: list[Module], platform: str) -> None:
+def print_followups(modules: list[Module]) -> None:
+    followups = [followup for module in modules for followup in module.followups]
+    if not followups:
+        return
+    print()
+    print("Follow-ups:")
+    for followup in followups:
+        print(f"  - {followup}")
+
+
+def should_show_followups(value: bool | None) -> bool:
+    if value is not None:
+        return value
+    return os.environ.get("MOI_FIRST_INSTALL") == "1"
+
+
+def print_plan(modules: list[Module], platform: str, show_followups: bool) -> None:
     packages = collect_packages(modules, platform)
     package_manager = "apt" if platform == "debian" else "pacman"
     print("Modules:")
@@ -657,12 +673,8 @@ def print_plan(modules: list[Module], platform: str) -> None:
             if command.unless:
                 print(f"unless{platform_label(command.platform)} ...")
             print(f"run{platform_label(command.platform)} ...")
-    notes = [note for module in modules for note in module.notes]
-    if notes:
-        print()
-        print("Notes:")
-        for note in notes:
-            print(f"  - {note}")
+    if show_followups:
+        print_followups(modules)
 
 
 def install_packages(packages: list[str], platform: str) -> None:
@@ -684,7 +696,7 @@ def install_packages(packages: list[str], platform: str) -> None:
     fail(f"unsupported platform: {platform}")
 
 
-def apply(modules: list[Module], platform: str, ignore_unless: bool = False) -> None:
+def apply(modules: list[Module], platform: str, show_followups: bool, ignore_unless: bool = False) -> None:
     packages = collect_packages(modules, platform)
     if packages:
         install_packages(packages, platform)
@@ -698,12 +710,8 @@ def apply(modules: list[Module], platform: str, ignore_unless: bool = False) -> 
         apply_blocks(module, dry_run=False, platform=platform)
         apply_commands(module, dry_run=False, platform=platform, ignore_unless=ignore_unless)
 
-    notes = [note for module in modules for note in module.notes]
-    if notes:
-        print()
-        print("Manual follow-up:")
-        for note in notes:
-            print(f"- {note}")
+    if show_followups:
+        print_followups(modules)
 
 
 def main() -> int:
@@ -716,6 +724,20 @@ def main() -> int:
         default="auto",
         help="target platform; defaults to auto-detection",
     )
+    plan_followups = plan_parser.add_mutually_exclusive_group()
+    plan_followups.add_argument(
+        "--show-followups",
+        dest="show_followups",
+        action="store_true",
+        default=None,
+        help="show manual follow-up steps",
+    )
+    plan_followups.add_argument(
+        "--no-followups",
+        dest="show_followups",
+        action="store_false",
+        help="hide manual follow-up steps",
+    )
     plan_parser.add_argument("modules", nargs="*", help="module names; defaults to all modules")
     apply_parser = subparsers.add_parser("apply")
     apply_parser.add_argument(
@@ -723,6 +745,20 @@ def main() -> int:
         choices=["auto", "debian", "arch"],
         default="auto",
         help="target platform; defaults to auto-detection",
+    )
+    apply_followups = apply_parser.add_mutually_exclusive_group()
+    apply_followups.add_argument(
+        "--show-followups",
+        dest="show_followups",
+        action="store_true",
+        default=None,
+        help="show manual follow-up steps",
+    )
+    apply_followups.add_argument(
+        "--no-followups",
+        dest="show_followups",
+        action="store_false",
+        help="hide manual follow-up steps",
     )
     apply_parser.add_argument(
         "--ignore-unless",
@@ -736,10 +772,11 @@ def main() -> int:
         modules = load_modules()
         ordered = resolve_modules(modules, args.modules)
         platform = detect_platform() if args.platform == "auto" else args.platform
+        show_followups = should_show_followups(args.show_followups)
         if args.command == "plan":
-            print_plan(ordered, platform=platform)
+            print_plan(ordered, platform=platform, show_followups=show_followups)
         else:
-            apply(ordered, platform=platform, ignore_unless=args.ignore_unless)
+            apply(ordered, platform=platform, show_followups=show_followups, ignore_unless=args.ignore_unless)
     except ConfigError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
