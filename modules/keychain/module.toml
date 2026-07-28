@@ -5,6 +5,7 @@ notes = ["Add SSH keys to keychain manually as needed."]
 
 [packages]
 apt = ["keychain"]
+pacman = ["keychain"]
 
 
 [[dirs]]

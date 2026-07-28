@@ -12,7 +12,7 @@
 
 - `0`: `plan` または `apply` が最後まで到達した
 - `1`: module 定義の検証で `ConfigError` が投げられた
-- command の exit code: `commands[].run`、`commands[].unless` 以外の実行 command、または apt command が `subprocess.CalledProcessError` を返した
+- command の exit code: `commands[].run`、`commands[].unless` 以外の実行 command、または package manager command が `subprocess.CalledProcessError` を返した
 
 `ConfigError` の場合、stderr に以下の形式で出力する。
 
@@ -33,8 +33,8 @@ error: command failed with exit code N
 clone 済み repo で使う command:
 
 ```sh
-./scripts/plan.sh [module ...]
-./scripts/apply.sh [module ...]
+./scripts/plan.sh [--platform auto|debian|arch] [module ...]
+./scripts/apply.sh [--platform auto|debian|arch] [module ...]
 ```
 
 `scripts/plan.sh` は `python3 scripts/moi.py plan "$@"` を実行する。
@@ -112,23 +112,61 @@ top-level で読める key:
 
 上記以外の key がある場合は `ConfigError` で停止する。
 
-## packages.apt
+## platform
+
+`dirs` / `files` / `blocks` / `artifacts` / `commands` は `platform` を持てる。
+
+```toml
+[[commands]]
+platform = "arch"
+run = "..."
+```
+
+schema:
+
+- `platform`: 省略可。`common` / `debian` / `arch` のいずれか。省略時は `common`
+
+`common` は全 platform で適用する。
+
+`debian` / `arch` は対象 platform と一致する場合だけ適用する。
+
+同じ `dst` や marker への複数定義は検出しない。module 定義側で避ける。
+
+対象 platform は既定で `/etc/os-release` の `ID` / `ID_LIKE` から自動判定する。
+`--platform debian` / `--platform arch` を指定した場合はその値を使う。
+
+## packages
 
 ```toml
 [packages]
 apt = ["git", "curl"]
+pacman = ["git", "curl"]
 ```
 
-`apply` は選択 module の `packages.apt` を集める。重複する package 名は 1 回にまとめる。
+schema:
+
+- `apt`: 省略可。Debian platform で使う package 名の string list
+- `pacman`: 省略可。Arch platform で使う package 名の string list
+
+`apply` は選択 module から対象 platform の package list を集める。重複する package 名は 1 回にまとめる。
 
 package が 1 個以上ある場合、module 個別処理の前に以下を実行する。
 
+Debian:
+
 ```sh
 sudo apt update
+sudo apt upgrade -y
 sudo apt install -y <packages...>
 ```
 
-`plan` は package 名を表示するだけで、`sudo apt` を実行しない。
+Arch:
+
+```sh
+sudo pacman -Syu --needed <packages...>
+```
+
+`plan` は package 名を表示するだけで、package manager command を実行しない。
 
 ## dirs
 
@@ -142,6 +180,7 @@ schema:
 
 - `path`: 必須 string
 - `mode`: 省略可。書く場合は string。`^[0-7]{3,4}$` に一致しなければ `ConfigError` で停止する
+- `platform`: 省略可。`platform` と同じ規則
 
 path expansion:
 
@@ -178,6 +217,7 @@ schema:
 - `src`: 必須 string。absolute path は `ConfigError` で停止する
 - `dst`: 必須 string
 - `mode`: 省略可。書く場合は string。`^[0-7]{3,4}$` に一致しなければ `ConfigError` で停止する
+- `platform`: 省略可。`platform` と同じ規則
 
 path expansion:
 
@@ -213,6 +253,7 @@ schema:
 - `src`: 必須 string。absolute path は `ConfigError` で停止する
 - `dst`: 必須 string
 - `marker`: 必須 string。`>>>` または改行を含む場合は `ConfigError` で停止する
+- `platform`: 省略可。`platform` と同じ規則
 
 path expansion:
 
@@ -264,6 +305,7 @@ requires = ["npm"]
 schema:
 
 - `run`: 必須 string
+- `platform`: 省略可。`platform` と同じ規則
 - `unless`: 省略可。書く場合は string
 - `requires`: 省略可。書く場合は string list
 

@@ -2,7 +2,12 @@ name = "github-cli"
 notes = ["Run `gh auth login` to authenticate with GitHub."]
 
 
+[packages]
+pacman = ["github-cli"]
+
+
 [[commands]]
+platform = "debian"
 # ref: https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian
 run = """
 sudo mkdir -p -m 755 /etc/apt/keyrings

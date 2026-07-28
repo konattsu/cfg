@@ -1,6 +1,6 @@
 # moi
 
-Linux(Debian) 用の環境をセットアップする repo
+Linux(Debian/Arch) 用の環境をセットアップする repo
 
 ## 仕組み
 
@@ -44,6 +44,14 @@ moi apply [module ...]
 
 モジュールを省略するとすべてを対象にする.
 指定した場合は、そのモジュールと `depends_on` の依存先を対象にする.
+
+対象 platform は `/etc/os-release` から自動判定する.
+確認時は明示指定できる.
+
+```sh
+moi plan --platform arch
+moi plan --platform debian
+```
 
 編集中のローカルcheckoutをそのまま実行する場合はlauncherを経由しない.
 

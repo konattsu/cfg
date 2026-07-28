@@ -4,6 +4,7 @@ depends_on = ["node"]
 
 [packages]
 apt = ["bubblewrap"]
+pacman = ["bubblewrap"]
 
 
 [[dirs]]

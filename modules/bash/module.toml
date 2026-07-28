@@ -4,6 +4,7 @@ depends_on = ["core"]
 
 [packages]
 apt = ["bash", "vim"]
+pacman = ["bash", "vim"]
 
 
 [[blocks]]

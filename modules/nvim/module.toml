@@ -13,6 +13,16 @@ apt = [
     "wl-clipboard",
     "xclip",
 ]
+pacman = [
+    "fd",
+    "lua51",
+    "luarocks",
+    "python-pynvim",
+    "ripgrep",
+    "unzip",
+    "wl-clipboard",
+    "xclip",
+]
 
 
 [[dirs]]
@@ -284,6 +294,7 @@ test -x "$HOME/.local/bin/nvim" &&
 requires = ["curl", "grep", "ln", "mkdir", "mktemp", "rm", "tar"]
 
 [[commands]]
+platform = "debian"
 run = """
 mkdir -p "$HOME/.local/bin"
 ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"

@@ -4,7 +4,12 @@ notes = [
 ]
 
 
+[packages]
+pacman = ["docker"]
+
+
 [[commands]]
+platform = "debian"
 run = """
 curl -fsSL https://get.docker.com | bash
 """

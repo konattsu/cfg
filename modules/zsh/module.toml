@@ -5,6 +5,7 @@ notes = ["Run `chsh -s /bin/zsh` to set zsh as your default shell."]
 
 [packages]
 apt = ["fontconfig", "unzip", "vim", "zsh"]
+pacman = ["fontconfig", "unzip", "vim", "zsh"]
 
 
 [[blocks]]

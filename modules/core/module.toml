@@ -17,3 +17,18 @@ apt = [
     "unzip",
     "wget",
 ]
+pacman = [
+    "base-devel",
+    "btop",
+    "ca-certificates",
+    "curl",
+    "ffmpeg",
+    "git",
+    "gnupg",
+    "lsb-release",
+    "net-tools",
+    "openssl",
+    "pkgconf",
+    "unzip",
+    "wget",
+]

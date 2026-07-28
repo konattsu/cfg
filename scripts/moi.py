@@ -2,6 +2,7 @@
 import argparse
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -27,6 +28,8 @@ MODULES_DIR = REPO_ROOT / "modules"
 EXECUTABLE_RE = re.compile(r"^[A-Za-z0-9._+-]+$")
 MODE_RE = re.compile(r"^[0-7]{3,4}$")
 BLOCK_COMMENT = "#"
+PLATFORMS = {"common", "debian", "arch"}
+PACKAGE_KEYS = {"apt", "pacman"}
 
 
 class ConfigError(Exception):
@@ -36,6 +39,7 @@ class ConfigError(Exception):
 @dataclass
 class Command:
     run: str
+    platform: str = "common"
     unless: str | None = None
     requires: list[str] = field(default_factory=list)
 
@@ -44,7 +48,7 @@ class Command:
 class Module:
     name: str
     path: Path
-    packages_apt: list[str] = field(default_factory=list)
+    packages: dict[str, list[str]] = field(default_factory=dict)
     dirs: list[dict[str, Any]] = field(default_factory=list)
     files: list[dict[str, Any]] = field(default_factory=list)
     blocks: list[dict[str, Any]] = field(default_factory=list)
@@ -102,6 +106,16 @@ def validate_executable(value: str, where: str) -> str:
     return value
 
 
+def validate_platform(value: Any, where: str) -> str:
+    if value is None:
+        return "common"
+    if not isinstance(value, str):
+        fail(f"{where}: platform must be a string")
+    if value not in PLATFORMS:
+        fail(f"{where}: unknown platform: {value}")
+    return value
+
+
 def expand_home(path: str) -> Path:
     if path == "~":
         return Path.home()
@@ -139,15 +153,18 @@ def parse_module(module_dir: Path) -> Module:
     if name != module_dir.name:
         fail(f"{path}: name must match directory name ({module_dir.name})")
 
-    packages_apt: list[str] = []
+    parsed_packages: dict[str, list[str]] = {}
     packages = data.get("packages", {})
     if packages:
         if not isinstance(packages, dict):
             fail(f"{path}: packages must be a mapping")
-        unknown_packages = sorted(set(packages) - {"apt"})
+        unknown_packages = sorted(set(packages) - PACKAGE_KEYS)
         if unknown_packages:
             fail(f"{path}: unknown packages keys: {', '.join(unknown_packages)}")
-        packages_apt = require_string_list(packages.get("apt"), f"{path}: packages.apt")
+        for key in sorted(PACKAGE_KEYS):
+            values = require_string_list(packages.get(key), f"{path}: packages.{key}")
+            if values:
+                parsed_packages[key] = values
 
     dirs = parse_path_items(data.get("dirs"), path, "dirs", src_required=False)
     files = parse_path_items(data.get("files"), path, "files", src_required=True)
@@ -173,7 +190,7 @@ def parse_module(module_dir: Path) -> Module:
     return Module(
         name=name,
         path=module_dir,
-        packages_apt=packages_apt,
+        packages=parsed_packages,
         dirs=dirs,
         files=files,
         blocks=blocks,
@@ -195,7 +212,7 @@ def parse_path_items(value: Any, path: Path, key: str, src_required: bool) -> li
         where = f"{path}: {key}[{idx}]"
         if not isinstance(item, dict):
             fail(f"{where}: must be a mapping")
-        allowed = {"src", "dst", "mode"} if src_required else {"path", "mode"}
+        allowed = {"src", "dst", "mode", "platform"} if src_required else {"path", "mode", "platform"}
         unknown = sorted(set(item) - allowed)
         if unknown:
             fail(f"{where}: unknown keys: {', '.join(unknown)}")
@@ -210,6 +227,7 @@ def parse_path_items(value: Any, path: Path, key: str, src_required: bool) -> li
         mode = validate_mode(item.get("mode"), f"{where}.mode")
         if mode is not None:
             parsed["mode"] = mode
+        parsed["platform"] = validate_platform(item.get("platform"), f"{where}.platform")
         items.append(parsed)
     return items
 
@@ -224,7 +242,7 @@ def parse_blocks(value: Any, path: Path) -> list[dict[str, str]]:
         where = f"{path}: blocks[{idx}]"
         if not isinstance(item, dict):
             fail(f"{where}: must be a mapping")
-        allowed = {"src", "dst", "marker"}
+        allowed = {"src", "dst", "marker", "platform"}
         unknown = sorted(set(item) - allowed)
         if unknown:
             fail(f"{where}: unknown keys: {', '.join(unknown)}")
@@ -235,7 +253,8 @@ def parse_blocks(value: Any, path: Path) -> list[dict[str, str]]:
         marker = require_string(item.get("marker"), f"{where}.marker")
         if ">>>" in marker or "\n" in marker:
             fail(f"{where}.marker: must not contain >>> or newline")
-        blocks.append({"src": src, "dst": dst, "marker": marker})
+        platform = validate_platform(item.get("platform"), f"{where}.platform")
+        blocks.append({"src": src, "dst": dst, "marker": marker, "platform": platform})
     return blocks
 
 
@@ -244,24 +263,31 @@ def parse_artifacts(value: Any, path: Path) -> list[dict[str, Any]]:
         return []
     if not isinstance(value, list):
         fail(f"{path}: artifacts must be a list")
+    artifacts: list[dict[str, Any]] = []
     for idx, item in enumerate(value):
         where = f"{path}: artifacts[{idx}]"
         if not isinstance(item, dict):
             fail(f"{where}: must be a mapping")
-        allowed = {"name", "url", "extract", "bin", "dst"}
+        allowed = {"name", "url", "extract", "bin", "dst", "platform"}
         unknown = sorted(set(item) - allowed)
         if unknown:
             fail(f"{where}: unknown keys: {', '.join(unknown)}")
-        require_string(item.get("name"), f"{where}.name")
-        require_string(item.get("url"), f"{where}.url")
-        validate_path_no_shell_expansion(require_string(item.get("dst"), f"{where}.dst"), f"{where}.dst")
+        parsed = {
+            "name": require_string(item.get("name"), f"{where}.name"),
+            "url": require_string(item.get("url"), f"{where}.url"),
+            "dst": validate_path_no_shell_expansion(require_string(item.get("dst"), f"{where}.dst"), f"{where}.dst"),
+            "platform": validate_platform(item.get("platform"), f"{where}.platform"),
+        }
         if "extract" in item and not isinstance(item["extract"], bool):
             fail(f"{where}.extract: must be a boolean")
+        if "extract" in item:
+            parsed["extract"] = item["extract"]
         if item.get("extract") and "bin" not in item:
             fail(f"{where}.bin: required when extract is true")
         if "bin" in item:
-            require_string(item.get("bin"), f"{where}.bin")
-    return value
+            parsed["bin"] = require_string(item.get("bin"), f"{where}.bin")
+        artifacts.append(parsed)
+    return artifacts
 
 
 def parse_commands(value: Any, path: Path) -> list[Command]:
@@ -274,17 +300,18 @@ def parse_commands(value: Any, path: Path) -> list[Command]:
         where = f"{path}: commands[{idx}]"
         if not isinstance(item, dict):
             fail(f"{where}: must be a mapping")
-        allowed = {"run", "unless", "requires"}
+        allowed = {"run", "platform", "unless", "requires"}
         unknown = sorted(set(item) - allowed)
         if unknown:
             fail(f"{where}: unknown keys: {', '.join(unknown)}")
         run = require_string(item.get("run"), f"{where}.run")
+        platform = validate_platform(item.get("platform"), f"{where}.platform")
         unless = item.get("unless")
         if unless is not None:
             unless = require_string(unless, f"{where}.unless")
         requires = require_string_list(item.get("requires"), f"{where}.requires")
         requires = [validate_executable(v, f"{where}.requires[]") for v in requires]
-        commands.append(Command(run=run, unless=unless, requires=requires))
+        commands.append(Command(run=run, platform=platform, unless=unless, requires=requires))
     return commands
 
 
@@ -347,11 +374,44 @@ def resolve_modules(modules: dict[str, Module], requested: list[str]) -> list[Mo
     return ordered
 
 
-def collect_apt_packages(modules: list[Module]) -> list[str]:
+def read_os_release(path: Path = Path("/etc/os-release")) -> dict[str, str]:
+    values: dict[str, str] = {}
+    if not path.is_file():
+        return values
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key] = value.strip().strip('"')
+    return values
+
+
+def detect_platform() -> str:
+    os_release = read_os_release()
+    ids = [os_release.get("ID", "")]
+    ids.extend(os_release.get("ID_LIKE", "").split())
+    normalized = {item.lower() for item in ids if item}
+    if normalized & {"debian", "ubuntu"}:
+        return "debian"
+    if normalized & {"arch", "archlinux"}:
+        return "arch"
+    fail("could not detect supported platform from /etc/os-release")
+
+
+def item_matches_platform(item_platform: str, platform: str) -> bool:
+    return item_platform == "common" or item_platform == platform
+
+
+def platform_label(item_platform: str) -> str:
+    return "" if item_platform == "common" else f" [{item_platform}]"
+
+
+def collect_packages(modules: list[Module], platform: str) -> list[str]:
+    key = "apt" if platform == "debian" else "pacman"
     seen: set[str] = set()
     packages: list[str] = []
     for module in modules:
-        for package in module.packages_apt:
+        for package in module.packages.get(key, []):
             if package not in seen:
                 seen.add(package)
                 packages.append(package)
@@ -408,11 +468,13 @@ def ensure_command(command: str) -> None:
     fail(f"required command not found: {command}")
 
 
-def apply_dirs(module: Module, dry_run: bool) -> None:
+def apply_dirs(module: Module, dry_run: bool, platform: str) -> None:
     for item in module.dirs:
+        if not item_matches_platform(item["platform"], platform):
+            continue
         path = expand_home(item["path"])
         mode = item.get("mode")
-        print(f"dir  {path}" + (f" mode={mode}" if mode else ""))
+        print(f"dir{platform_label(item['platform'])} {path}" + (f" mode={mode}" if mode else ""))
         if dry_run:
             continue
         path.mkdir(parents=True, exist_ok=True)
@@ -420,14 +482,16 @@ def apply_dirs(module: Module, dry_run: bool) -> None:
             path.chmod(int(mode, 8))
 
 
-def apply_files(module: Module, dry_run: bool) -> None:
+def apply_files(module: Module, dry_run: bool, platform: str) -> None:
     for item in module.files:
+        if not item_matches_platform(item["platform"], platform):
+            continue
         src = module.path / item["src"]
         dst = expand_home(item["dst"])
         mode = item.get("mode")
         if not src.is_file():
             fail(f"{module.name}: file source not found: {src}")
-        print(f"file {src} -> {dst}" + (f" mode={mode}" if mode else ""))
+        print(f"file{platform_label(item['platform'])} {src} -> {dst}" + (f" mode={mode}" if mode else ""))
         if dry_run:
             continue
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -442,15 +506,17 @@ def block_text(marker: str, content: str) -> str:
     return f"{BLOCK_COMMENT} >>> {marker} >>>\n{content}{BLOCK_COMMENT} <<< {marker} <<<\n"
 
 
-def apply_blocks(module: Module, dry_run: bool) -> None:
+def apply_blocks(module: Module, dry_run: bool, platform: str) -> None:
     for item in module.blocks:
+        if not item_matches_platform(item["platform"], platform):
+            continue
         src = module.path / item["src"]
         dst = expand_home(item["dst"])
         marker = item["marker"]
         if not src.is_file():
             fail(f"{module.name}: block source not found: {src}")
         content = src.read_text(encoding="utf-8")
-        print(f"block {src} -> {dst} marker={marker}")
+        print(f"block{platform_label(item['platform'])} {src} -> {dst} marker={marker}")
         if dry_run:
             continue
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -484,12 +550,14 @@ def replace_or_append_block(existing: str, marker: str, content: str) -> str:
     return "".join(lines[:start]) + replacement + "".join(lines[end + 1 :])
 
 
-def apply_artifacts(module: Module, dry_run: bool) -> None:
+def apply_artifacts(module: Module, dry_run: bool, platform: str) -> None:
     for item in module.artifacts:
+        if not item_matches_platform(item["platform"], platform):
+            continue
         name = item["name"]
         url = item["url"]
         dst = expand_home(item["dst"])
-        print(f"artifact {module.name}:{name} {url} -> {dst}")
+        print(f"artifact{platform_label(item['platform'])} {module.name}:{name} {url} -> {dst}")
         if dry_run:
             continue
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -537,31 +605,36 @@ def find_extracted_binary(root: Path, name: str) -> Path:
     return matches[0]
 
 
-def apply_commands(module: Module, dry_run: bool, ignore_unless: bool = False) -> None:
+def apply_commands(module: Module, dry_run: bool, platform: str, ignore_unless: bool = False) -> None:
     for idx, command in enumerate(module.commands, start=1):
+        if not item_matches_platform(command.platform, platform):
+            continue
         for required in command.requires:
             print(f"require {required}")
             if not dry_run:
                 ensure_command(required)
         if command.unless and not ignore_unless:
-            print(f"unless command[{idx}]")
+            print(f"unless{platform_label(command.platform)} command[{idx}]")
             if not dry_run:
                 result = run_bash(command.unless, module.path, check=False)
                 if result.returncode == 0:
                     print(f"skip command[{idx}]")
                     continue
-        print(f"run command[{idx}]")
+        print(f"run{platform_label(command.platform)} command[{idx}]")
         if not dry_run:
             run_bash(command.run, module.path, check=True)
 
 
-def print_plan(modules: list[Module]) -> None:
-    packages = collect_apt_packages(modules)
+def print_plan(modules: list[Module], platform: str) -> None:
+    packages = collect_packages(modules, platform)
+    package_manager = "apt" if platform == "debian" else "pacman"
     print("Modules:")
     for module in modules:
         print(f"  - {module.name}")
     print()
-    print("APT packages:")
+    print(f"Platform: {platform}")
+    print()
+    print(f"{package_manager} packages:")
     if packages:
         for package in packages:
             print(f"  - {package}")
@@ -572,16 +645,18 @@ def print_plan(modules: list[Module]) -> None:
     for module in modules:
         print(f"[{module.name}]")
         apply_env(module)
-        apply_dirs(module, dry_run=True)
-        apply_artifacts(module, dry_run=True)
-        apply_files(module, dry_run=True)
-        apply_blocks(module, dry_run=True)
+        apply_dirs(module, dry_run=True, platform=platform)
+        apply_artifacts(module, dry_run=True, platform=platform)
+        apply_files(module, dry_run=True, platform=platform)
+        apply_blocks(module, dry_run=True, platform=platform)
         for command in module.commands:
+            if not item_matches_platform(command.platform, platform):
+                continue
             for required in command.requires:
                 print(f"require {required}")
             if command.unless:
-                print("unless ...")
-            print("run ...")
+                print(f"unless{platform_label(command.platform)} ...")
+            print(f"run{platform_label(command.platform)} ...")
     notes = [note for module in modules for note in module.notes]
     if notes:
         print()
@@ -590,23 +665,38 @@ def print_plan(modules: list[Module]) -> None:
             print(f"  - {note}")
 
 
-def apply(modules: list[Module], ignore_unless: bool = False) -> None:
-    packages = collect_apt_packages(modules)
-    if packages:
+def install_packages(packages: list[str], platform: str) -> None:
+    if not packages:
+        return
+    quoted = " ".join(shlex.quote(package) for package in packages)
+    if platform == "debian":
         print("apt update")
         run_bash("sudo apt update", REPO_ROOT, check=True)
-        quoted = " ".join(packages)
+        print("apt upgrade")
+        run_bash("sudo apt upgrade -y", REPO_ROOT, check=True)
         print(f"apt install {quoted}")
         run_bash(f"sudo apt install -y {quoted}", REPO_ROOT, check=True)
+        return
+    if platform == "arch":
+        print(f"pacman -Syu --needed {quoted}")
+        run_bash(f"sudo pacman -Syu --needed {quoted}", REPO_ROOT, check=True)
+        return
+    fail(f"unsupported platform: {platform}")
+
+
+def apply(modules: list[Module], platform: str, ignore_unless: bool = False) -> None:
+    packages = collect_packages(modules, platform)
+    if packages:
+        install_packages(packages, platform)
 
     for module in modules:
         print(f"==> {module.name}")
         apply_env(module)
-        apply_dirs(module, dry_run=False)
-        apply_artifacts(module, dry_run=False)
-        apply_files(module, dry_run=False)
-        apply_blocks(module, dry_run=False)
-        apply_commands(module, dry_run=False, ignore_unless=ignore_unless)
+        apply_dirs(module, dry_run=False, platform=platform)
+        apply_artifacts(module, dry_run=False, platform=platform)
+        apply_files(module, dry_run=False, platform=platform)
+        apply_blocks(module, dry_run=False, platform=platform)
+        apply_commands(module, dry_run=False, platform=platform, ignore_unless=ignore_unless)
 
     notes = [note for module in modules for note in module.notes]
     if notes:
@@ -620,8 +710,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="moi module planner/applicator")
     subparsers = parser.add_subparsers(dest="command", required=True)
     plan_parser = subparsers.add_parser("plan")
+    plan_parser.add_argument(
+        "--platform",
+        choices=["auto", "debian", "arch"],
+        default="auto",
+        help="target platform; defaults to auto-detection",
+    )
     plan_parser.add_argument("modules", nargs="*", help="module names; defaults to all modules")
     apply_parser = subparsers.add_parser("apply")
+    apply_parser.add_argument(
+        "--platform",
+        choices=["auto", "debian", "arch"],
+        default="auto",
+        help="target platform; defaults to auto-detection",
+    )
     apply_parser.add_argument(
         "--ignore-unless",
         action="store_true",
@@ -633,10 +735,11 @@ def main() -> int:
     try:
         modules = load_modules()
         ordered = resolve_modules(modules, args.modules)
+        platform = detect_platform() if args.platform == "auto" else args.platform
         if args.command == "plan":
-            print_plan(ordered)
+            print_plan(ordered, platform=platform)
         else:
-            apply(ordered, ignore_unless=args.ignore_unless)
+            apply(ordered, platform=platform, ignore_unless=args.ignore_unless)
     except ConfigError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1

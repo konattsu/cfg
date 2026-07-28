@@ -4,6 +4,7 @@ depends_on = ["zsh"]
 
 [packages]
 apt = ["zoxide"]
+pacman = ["zoxide"]
 
 
 [[blocks]]

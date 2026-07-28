@@ -4,6 +4,7 @@ notes = ["Remember to set the ssh key for signing commits."]
 
 [packages]
 apt = ["git", "vim"]
+pacman = ["git", "vim"]
 
 
 [[dirs]]
