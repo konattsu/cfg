@@ -24,6 +24,20 @@ end
 vim.opt.fixendofline = true
 vim.opt.endofline = true
 
+-- trim trailing whitespace on save
+local trim_trailing_whitespace_group = vim.api.nvim_create_augroup("trim_trailing_whitespace", { clear = true })
+
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = trim_trailing_whitespace_group,
+  pattern = "*",
+  callback = function()
+    local view = vim.fn.winsaveview()
+    vim.cmd [[keeppatterns %s/\s\+$//e]]
+    vim.fn.winrestview(view)
+  end,
+})
+
+-- trim trailing blank lines and insert finel newline on save
 local trim_trailing_blank_lines_group = vim.api.nvim_create_augroup("trim_trailing_blank_lines", { clear = true })
 
 vim.api.nvim_create_autocmd("BufWritePre", {
