@@ -20,3 +20,27 @@ else
     },
   }
 end
+
+vim.opt.fixendofline = true
+vim.opt.endofline = true
+
+local trim_trailing_blank_lines_group = vim.api.nvim_create_augroup("trim_trailing_blank_lines", { clear = true })
+
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = trim_trailing_blank_lines_group,
+  pattern = "*",
+  callback = function(args)
+    local bufnr = args.buf
+    local last = vim.api.nvim_buf_line_count(bufnr)
+
+    while last > 1 do
+      local line = vim.api.nvim_buf_get_lines(bufnr, last - 1, last, false)[1]
+      if line and line:match "^%s*$" then
+        vim.api.nvim_buf_set_lines(bufnr, last - 1, last, false, {})
+        last = last - 1
+      else
+        break
+      end
+    end
+  end,
+})
