@@ -29,6 +29,54 @@ pacman = [
 path = "~/.config/nvim"
 mode = "755"
 
+[[dirs]]
+path = "~/.config/nvim/colors"
+mode = "755"
+
+[[dirs]]
+path = "~/.config/nvim/after/queries/rust"
+mode = "755"
+
+[[dirs]]
+path = "~/.config/nvim/lua/colors/solarized_dark"
+mode = "755"
+
+
+[[files]]
+src = "files/after/queries/rust/highlights.scm"
+dst = "~/.config/nvim/after/queries/rust/highlights.scm"
+mode = "644"
+
+[[files]]
+src = "files/colors/solarized-dark.lua"
+dst = "~/.config/nvim/colors/solarized-dark.lua"
+mode = "644"
+
+[[files]]
+src = "files/lua/colors/solarized_dark/base.lua"
+dst = "~/.config/nvim/lua/colors/solarized_dark/base.lua"
+mode = "644"
+
+[[files]]
+src = "files/lua/colors/solarized_dark/init.lua"
+dst = "~/.config/nvim/lua/colors/solarized_dark/init.lua"
+mode = "644"
+
+[[files]]
+src = "files/lua/colors/solarized_dark/palette.lua"
+dst = "~/.config/nvim/lua/colors/solarized_dark/palette.lua"
+mode = "644"
+
+[[files]]
+src = "files/lua/colors/solarized_dark/rust.lua"
+dst = "~/.config/nvim/lua/colors/solarized_dark/rust.lua"
+mode = "644"
+
+[[files]]
+src = "files/colors/tokyo-dark.lua"
+dst = "~/.config/nvim/colors/tokyo-dark.lua"
+mode = "644"
+
 
 [[files]]
 src = "files/dot_luarc.json"
@@ -118,11 +166,6 @@ mode = "644"
 [[files]]
 src = "files/lua/plugins/disabled.lua"
 dst = "~/.config/nvim/lua/plugins/disabled.lua"
-mode = "644"
-
-[[files]]
-src = "files/lua/plugins/everforest.lua"
-dst = "~/.config/nvim/lua/plugins/everforest.lua"
 mode = "644"
 
 [[files]]
@@ -243,6 +286,11 @@ mode = "644"
 [[files]]
 src = "files/lua/plugins/picker.lua"
 dst = "~/.config/nvim/lua/plugins/picker.lua"
+mode = "644"
+
+[[files]]
+src = "files/lua/plugins/rainbow-delimiters.lua"
+dst = "~/.config/nvim/lua/plugins/rainbow-delimiters.lua"
 mode = "644"
 
 [[files]]
