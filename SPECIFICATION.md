@@ -33,8 +33,8 @@ error: command failed with exit code N
 clone 済み repo で使う command:
 
 ```sh
-./scripts/plan.sh [--platform auto|debian|arch] [module ...]
-./scripts/apply.sh [--platform auto|debian|arch] [module ...]
+./scripts/plan.sh [--environment ENV] [--folder-name NAME] [--source SOURCE] [--platform auto|debian|arch] [module ...]
+./scripts/apply.sh [--environment ENV] [--folder-name NAME] [--source SOURCE] [--platform auto|debian|arch] [module ...]
 ```
 
 `scripts/plan.sh` は `python3 scripts/moi.py plan "$@"` を実行する。
@@ -54,33 +54,63 @@ MOI_SELF_URL=https://raw.githubusercontent.com/konattsu/moi/main/moi.sh
 MOI_SELF_PATH=~/.local/bin/moi
 ```
 
+設定ファイルは以下に置く。
+
+```sh
+~/.config/moi/config.toml
+```
+
+schema:
+
+```toml
+default_environment = "host"
+default_folder_name = "environments"
+default_source = "https://github.com/konattsu/moi.git"
+```
+
+`moi` は `environment`, `folder_name`, `source` を command line argument, environment variable, 設定ファイルの順に解決する。
+
+| value | command line | environment | config |
+| --- | --- | --- | --- |
+| environment | `--environment` | `MOI_ENVIRONMENT` | `default_environment` |
+| folder_name | `--folder-name` | `MOI_FOLDER_NAME` | `default_folder_name` |
+| source | `--source` | `MOI_SOURCE` | `default_source` |
+
+`environment` が解決できない場合は停止する。
+`folder_name` が解決できない場合は `environments` を使う。
+`source` が解決できない場合は `https://github.com/konattsu/moi.git` を使う。
+`source` は `https://` または `file:///` で始まらなければ停止する。
+`folder_name` は repository-relative path で、`..` を含む場合は停止する。
+
+設定ファイルが存在しない状態で3つの値を解決し、source の repository root から command entry point を確認できた場合、`moi` は `~/.config/moi/config.toml` を作成する。
+書き込む値は解決後の値。
+
 `moi` は以下を行う。
 
 1. `MOI_NO_SELF_UPDATE=1` でなければ `MOI_SELF_URL` から自分自身を download する
 2. `MOI_SELF_PATH` と download 結果が違う場合、`MOI_SELF_PATH` を置き換えて `exec "$MOI_SELF_PATH" "$@"` で再実行する
-3. `mktemp -d` で一時 directory を作る
-4. EXIT trap で一時 directory を削除する
-5. `git clone --depth 1 --branch "$MOI_BRANCH" "$MOI_REPO_URL" "<tmpdir>"` を実行する
-6. `"<tmpdir>/scripts/<command>.sh" "$@"` を実行する
+3. `environment`, `folder_name`, `source` を解決する
+4. `source` が `https://` で始まる場合、`mktemp -d` で一時 directory を作り、EXIT trap で削除し、`git clone --depth 1 --branch "$MOI_BRANCH" "$source" "<tmpdir>"` を実行する
+5. `source` が `file:///` で始まる場合、その path を repository root として使う
+6. `"<repo>/scripts/<command>.sh" --environment "$environment" --folder-name "$folder_name" --source "$source" "$@"` を実行する
 
 `moi` default:
 
 ```sh
-MOI_REPO_URL=https://github.com/konattsu/moi.git
 MOI_BRANCH=main
 MOI_SELF_URL=https://raw.githubusercontent.com/konattsu/moi/main/moi.sh
 MOI_SELF_PATH=~/.local/bin/moi
 ```
 
-`moi` は第一引数が `plan` / `apply` の場合、その command を実行する。第一引数がない場合、または第一引数が `plan` / `apply` 以外の場合は `apply` を実行する。
+`moi` は `plan` / `apply` のどちらかの操作を必須とする。操作がない場合は停止する。
 
 ## Module Selection
 
-module は `modules/<name>/module.toml` で定義する。
+module は `<folder_name>/<environment>/modules/<name>/module.toml` で定義する。
 
 `name` は `<name>` と一致しなければならない。一致しない場合は `ConfigError` で停止する。
 
-`plan` / `apply` に module 名を渡さない場合、`modules/*/module.toml` を持つ全 directory を読む。
+`plan` / `apply` に module 名を渡さない場合、`<folder_name>/<environment>/modules/*/module.toml` を持つ全 directory を読む。
 
 `plan git keychain` のように module 名を渡した場合、渡した module と、その `depends_on` を再帰的に読む。
 
@@ -401,9 +431,9 @@ followups = ["Run `gh auth login` to authenticate with GitHub."]
 
 ### Shell Editors
 
-`modules/zsh` は `~/.zshrc` に editor 用 marker block を入れる。
+`environments/host/modules/zsh` は `~/.zshrc` に editor 用 marker block を入れる。
 
-`modules/bash` は `~/.bashrc` に editor 用 marker block を入れる。
+`environments/host/modules/bash` は `~/.bashrc` に editor 用 marker block を入れる。
 
 block の実行内容:
 
@@ -415,9 +445,9 @@ export GIT_EDITOR=vim
 
 ### Git
 
-`modules/git` は `~/.gitconfig` を `[[files]]` で配置しない。
+`environments/host/modules/git` は `~/.gitconfig` を `[[files]]` で配置しない。
 
-`modules/git` は以下を配置する。
+`environments/host/modules/git` は以下を配置する。
 
 ```text
 ~/.config/moi/git/config
@@ -425,17 +455,17 @@ export GIT_EDITOR=vim
 
 この include 先で `core.editor = vim` を設定する。
 
-`modules/git` は以下を 1 回だけ追加する。既に同じ include path がある場合は追加しない。
+`environments/host/modules/git` は以下を 1 回だけ追加する。既に同じ include path がある場合は追加しない。
 
 ```sh
 git config --global --add include.path "$HOME/.config/moi/git/config"
 ```
 
-Git user, email, signing key, `allowed_signers` は `modules/git` では設定しない。
+Git user, email, signing key, `allowed_signers` は `environments/host/modules/git` では設定しない。
 
 ### Keychain
 
-`modules/keychain` は `~/.zshrc` と `~/.bashrc` に marker block を入れる。
+`environments/host/modules/keychain` は `~/.zshrc` と `~/.bashrc` に marker block を入れる。
 
 block の実行内容:
 
@@ -491,9 +521,9 @@ placeholder:
 
 該当例:
 
-- `modules/lazygit`
-- `modules/yazi`
-- `modules/nvim`
+- `environments/host/modules/lazygit`
+- `environments/host/modules/yazi`
+- `environments/host/modules/nvim`
 
 `unless` の exit code が 0 の場合は再取得しない。つまり、初回実行時点の latest が残る。
 
@@ -502,7 +532,7 @@ placeholder:
 module 読み込みと plan 表示:
 
 ```sh
-python3 scripts/moi.py plan [module ...]
+MOI_ENVIRONMENT=host MOI_SOURCE=file:///$PWD python3 scripts/moi.py plan [module ...]
 ```
 
 shell syntax:

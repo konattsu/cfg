@@ -24,12 +24,15 @@ except ModuleNotFoundError:
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-MODULES_DIR = REPO_ROOT / "modules"
+CONFIG_PATH = Path.home() / ".config" / "moi" / "config.toml"
 EXECUTABLE_RE = re.compile(r"^[A-Za-z0-9._+-]+$")
 MODE_RE = re.compile(r"^[0-7]{3,4}$")
 BLOCK_COMMENT = "#"
 PLATFORMS = {"common", "debian", "arch"}
 PACKAGE_KEYS = {"apt", "pacman"}
+CONFIG_KEYS = {"default_environment", "default_folder_name", "default_source"}
+DEFAULT_FOLDER_NAME = "environments"
+DEFAULT_SOURCE = "https://github.com/konattsu/moi.git"
 
 
 class ConfigError(Exception):
@@ -59,6 +62,13 @@ class Module:
     followups: list[str] = field(default_factory=list)
 
 
+@dataclass
+class MoiConfig:
+    environment: str
+    folder_name: str
+    source: str
+
+
 def fail(message: str) -> None:
     raise ConfigError(message)
 
@@ -76,10 +86,26 @@ def load_toml(path: Path) -> dict[str, Any]:
     return value
 
 
+def load_config_file(path: Path = CONFIG_PATH) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    data = load_toml(path)
+    unknown = sorted(set(data) - CONFIG_KEYS)
+    if unknown:
+        fail(f"{path}: unknown keys: {', '.join(unknown)}")
+    return data
+
+
 def require_string(value: Any, where: str) -> str:
     if not isinstance(value, str) or value == "":
         fail(f"{where}: must be a non-empty string")
     return value
+
+
+def optional_config_string(value: Any, where: str) -> str | None:
+    if value is None:
+        return None
+    return require_string(value, where)
 
 
 def require_string_list(value: Any, where: str) -> list[str]:
@@ -104,6 +130,69 @@ def validate_executable(value: str, where: str) -> str:
     if not EXECUTABLE_RE.fullmatch(value):
         fail(f'{where}: invalid executable name "{value}"')
     return value
+
+
+def validate_source(value: str, where: str) -> str:
+    if value.startswith("https://") or value.startswith("file:///"):
+        return value
+    fail(f'{where}: must start with "https://" or "file:///"')
+
+
+def validate_folder_name(value: str, where: str) -> str:
+    path = Path(value)
+    if path.is_absolute():
+        fail(f"{where}: must be repository-relative")
+    if any(part == ".." for part in path.parts):
+        fail(f"{where}: must not contain ..")
+    return value.strip("/")
+
+
+def resolve_setting(
+    cli_value: str | None,
+    env_name: str,
+    config: dict[str, Any],
+    config_key: str,
+    display_name: str,
+    default: str | None = None,
+) -> str:
+    value = cli_value or os.environ.get(env_name) or optional_config_string(config.get(config_key), f"{CONFIG_PATH}: {config_key}") or default
+    if not value:
+        fail(f"missing required setting: {display_name} (use --{display_name.replace('_', '-')} or {env_name} or {CONFIG_PATH})")
+    return value
+
+
+def resolve_config(args: argparse.Namespace) -> MoiConfig:
+    config = load_config_file()
+    environment = resolve_setting(
+        args.environment,
+        "MOI_ENVIRONMENT",
+        config,
+        "default_environment",
+        "environment",
+    )
+    folder_name = validate_folder_name(
+        resolve_setting(
+            args.folder_name,
+            "MOI_FOLDER_NAME",
+            config,
+            "default_folder_name",
+            "folder_name",
+            default=DEFAULT_FOLDER_NAME,
+        ),
+        "folder_name",
+    )
+    source = validate_source(
+        resolve_setting(
+            args.source,
+            "MOI_SOURCE",
+            config,
+            "default_source",
+            "source",
+            default=DEFAULT_SOURCE,
+        ),
+        "source",
+    )
+    return MoiConfig(environment=environment, folder_name=folder_name, source=source)
 
 
 def validate_platform(value: Any, where: str) -> str:
@@ -315,11 +404,11 @@ def parse_commands(value: Any, path: Path) -> list[Command]:
     return commands
 
 
-def load_modules() -> dict[str, Module]:
+def load_modules(modules_dir: Path) -> dict[str, Module]:
     modules: dict[str, Module] = {}
-    if not MODULES_DIR.exists():
-        fail(f"modules directory not found: {MODULES_DIR}")
-    for module_dir in sorted(MODULES_DIR.iterdir()):
+    if not modules_dir.exists():
+        fail(f"modules directory not found: {modules_dir}")
+    for module_dir in sorted(modules_dir.iterdir()):
         if not module_dir.is_dir():
             continue
         if not (module_dir / "module.toml").exists():
@@ -716,8 +805,12 @@ def apply(modules: list[Module], platform: str, show_followups: bool, ignore_unl
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="moi module planner/applicator")
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument("--environment", help="target environment name")
+    parent_parser.add_argument("--folder-name", help="repository-relative environments folder")
+    parent_parser.add_argument("--source", help="configuration source URL")
     subparsers = parser.add_subparsers(dest="command", required=True)
-    plan_parser = subparsers.add_parser("plan")
+    plan_parser = subparsers.add_parser("plan", parents=[parent_parser])
     plan_parser.add_argument(
         "--platform",
         choices=["auto", "debian", "arch"],
@@ -739,7 +832,7 @@ def main() -> int:
         help="hide manual follow-up steps",
     )
     plan_parser.add_argument("modules", nargs="*", help="module names; defaults to all modules")
-    apply_parser = subparsers.add_parser("apply")
+    apply_parser = subparsers.add_parser("apply", parents=[parent_parser])
     apply_parser.add_argument(
         "--platform",
         choices=["auto", "debian", "arch"],
@@ -769,7 +862,9 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        modules = load_modules()
+        moi_config = resolve_config(args)
+        modules_dir = REPO_ROOT / moi_config.folder_name / moi_config.environment / "modules"
+        modules = load_modules(modules_dir)
         ordered = resolve_modules(modules, args.modules)
         platform = detect_platform() if args.platform == "auto" else args.platform
         show_followups = should_show_followups(args.show_followups)

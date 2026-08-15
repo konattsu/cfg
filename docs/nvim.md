@@ -7,7 +7,7 @@
 - **Neovim**: エディタ本体。公式の最新stable tarballを展開して
   `~/.local/share/nvim-linux-x86_64` に配置する。
 - **AstroNvimとプラグイン**: Neovim上で動くLuaプラグイン群。`lazy.nvim` が管理する。
-- **設定**: `modules/nvim/files` に置き、`moi apply nvim` で
+- **設定**: `environments/host/modules/nvim/files` に置き、`moi apply nvim` で
   `~/.config/nvim` へコピーする。
 
 AstroNvimは `version = "^6"` とし、6.xのstable releaseを追従する。7.xへの更新は
