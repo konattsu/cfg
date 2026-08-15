@@ -46,4 +46,6 @@ setopt hist_ignore_dups
 setopt hist_ignore_all_dups
 setopt auto_cd
 
-cd
+if [[ -n "${WSL_DISTRO_NAME:-}" && "$PWD" == /mnt/* ]]; then
+  cd "$HOME"
+fi

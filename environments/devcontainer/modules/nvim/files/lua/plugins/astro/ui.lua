@@ -4,6 +4,18 @@ return {
   ---@type AstroUIOpts
   opts = {
     colorscheme = "solarized-dark",
+    status = {
+      colors = {
+        mode_fg = "#00212b",
+        normal = "#C8C3DC",
+        insert = "#198CAA",
+        visual = "#EB4682",
+        replace = "#ec5f67",
+        command = "#ebae34",
+        terminal = "#98c379",
+        inactive = "#5c5c5c",
+      },
+    },
     highlights = {
       init = function()
         local get_hlgroup = require("astroui").get_hlgroup
