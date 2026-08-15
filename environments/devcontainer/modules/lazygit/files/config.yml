@@ -1,0 +1,14 @@
+gui:
+  theme:
+    selectedLineBgColor:
+      - "#45475a"
+      - bold
+    inactiveViewSelectedLineBgColor:
+      - "#45475a"
+      - bold
+
+git:
+  diffContextSize: 3000
+  pagers:
+    - colorArg: always
+      pager: delta --dark --hunk-header-style=omit --line-numbers --paging=never

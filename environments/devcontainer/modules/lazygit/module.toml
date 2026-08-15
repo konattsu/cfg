@@ -1,0 +1,38 @@
+name = "lazygit"
+depends_on = ["core"]
+
+
+[packages]
+apt = ["git-delta"]
+pacman = ["git-delta"]
+
+
+[[dirs]]
+path = "~/.config/lazygit"
+mode = "755"
+
+
+[[files]]
+src = "files/config.yml"
+dst = "~/.config/lazygit/config.yml"
+mode = "644"
+
+
+[[commands]]
+# ref: https://github.com/jesseduffield/lazygit#debian-and-ubuntu
+run = """
+set -euo pipefail
+LAZYGIT_VERSION=$(curl -fsSL "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\\K[^"]*')
+LAZYGIT_ARCH=$(uname -m | sed -e 's/aarch64/arm64/' -e 's/x86_64/x86_64/')
+tmp=$(mktemp -d)
+curl -fsSL -o "$tmp/lazygit.tar.gz" "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_${LAZYGIT_ARCH}.tar.gz"
+tar -C "$tmp" -xf "$tmp/lazygit.tar.gz" lazygit
+install -D -m 755 "$tmp/lazygit" "$HOME/.local/bin/lazygit"
+rm -rf "$tmp"
+"""
+unless = "test -x \"$HOME/.local/bin/lazygit\""
+requires = ["curl", "grep", "install", "mktemp", "tar", "uname"]
+
+
+[env]
+path_prepend = ["~/.local/bin"]

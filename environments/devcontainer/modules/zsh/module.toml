@@ -1,0 +1,58 @@
+name = "zsh"
+depends_on = ["core"]
+followups = ["Run `chsh -s /bin/zsh` to set zsh as your default shell."]
+
+
+[packages]
+apt = ["fontconfig", "unzip", "vim", "zsh"]
+pacman = ["fontconfig", "unzip", "vim", "zsh"]
+
+
+[[blocks]]
+src = "files/zshrc.sh"
+dst = "~/.zshrc"
+marker = "moi:zsh"
+
+[[blocks]]
+src = "files/editor.sh"
+dst = "~/.zshrc"
+marker = "moi:zsh:editor"
+
+
+[[files]]
+src = "files/my_theme.omp.json"
+dst = "~/.poshthemes/my_theme.omp.json"
+
+
+[[commands]]
+run = """
+RUNZSH=no CHSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+"""
+unless = "test -d \"$HOME/.oh-my-zsh\""
+requires = ["curl", "sh"]
+
+[[commands]]
+run = """
+mkdir -p "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+git clone https://github.com/zsh-users/zsh-autosuggestions "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
+"""
+unless = "test -d \"${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions\""
+requires = ["git"]
+
+[[commands]]
+run = """
+mkdir -p "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting"
+"""
+unless = "test -d \"${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting\""
+requires = ["git"]
+
+[[commands]]
+run = """
+curl -fsSL https://ohmyposh.dev/install.sh | bash -s
+"""
+unless = "command -v oh-my-posh"
+requires = ["bash", "curl"]
+
+[env]
+path_prepend = ["~/.local/bin"]
