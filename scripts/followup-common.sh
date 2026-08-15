@@ -42,7 +42,13 @@ add_manual_step() {
 user_at_machine() {
   local user machine
   user="${USER:-$(id -un 2>/dev/null || printf user)}"
-  machine="$(hostname -s 2>/dev/null || hostname 2>/dev/null || printf machine)"
+  machine="$(
+    hostname -s 2>/dev/null ||
+      hostname 2>/dev/null ||
+      uname -n 2>/dev/null ||
+      sed -n '1p' /etc/hostname 2>/dev/null ||
+      printf unknown-host
+  )"
   printf '%s@%s\n' "$user" "$machine"
 }
 

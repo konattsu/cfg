@@ -2,21 +2,46 @@
 
 Linux(Debian/Arch) 用の環境をセットアップする repo
 
-## 仕組み
+## Install
 
-実行は次の3段階に分かれている。
+`install.sh` には `curl`, その後の `moi` 実行には `python3` が必要.
+source が `https://` の場合は `git` も必要.
 
-1. `install.sh` がlauncherの `moi.sh` をダウンロードし、`~/.local/bin/moi` に配置する
-2. `moi` が設定から source, folder, environment を決める
-3. source が `https://` の場合は一時ディレクトリへ clone し、`file:///` の場合はその checkout を使う
-4. `scripts/moi.py` が `<folder>/<environment>/modules/*/module.toml` を読み、planまたはapplyを実行する
+```sh
+curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh \
+  | MOI_ENVIRONMENT=host bash -s -- apply
+```
 
-`install.sh` は初回導入用.
-launcherを配置したあと, 渡された引数でそのまま `moi` を起動する.
-以降は `moi` を直接使えばよい。
+これは launcher を `~/.local/bin/moi` に配置し、`~/.config/moi/config.toml` を作成して、全モジュールを apply する。
+変更内容だけ確認する場合は `plan` を使う。
 
-`moi` は通常、実行時にlauncher自身を更新する.
-source が `https://` の場合、リポジトリを一時cloneし、実行後に削除する.
+## Usage
+
+```sh
+moi [--environment ENV] [--folder-name NAME] [--source SOURCE] plan [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
+moi [--environment ENV] [--folder-name NAME] [--source SOURCE] apply [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
+```
+
+`plan` は予定されるモジュール, パッケージ, ファイル, コマンドを表示するだけで変更しない.
+`apply` はそれらを実際に適用する.
+
+モジュールを省略するとすべてを対象にする。指定した場合は、そのモジュールと `depends_on` の依存先を対象にする.
+
+対象 platform は `/etc/os-release` から自動判定する。確認時は明示指定できる.
+
+```sh
+moi plan --platform arch
+moi plan --platform debian
+```
+
+編集中のローカル checkout をそのまま実行する場合:
+
+```sh
+MOI_ENVIRONMENT=host MOI_SOURCE=file:///$PWD ./scripts/plan.sh [module ...]
+MOI_ENVIRONMENT=host MOI_SOURCE=file:///$PWD ./scripts/apply.sh [module ...]
+```
+
+## 設定
 
 設定ファイルは `~/.config/moi/config.toml` に置く。
 
@@ -30,60 +55,23 @@ default_source = "https://github.com/konattsu/moi.git"
 `default_folder_name` と `default_source` は設定がなければ上記の既定値を使う。
 `environment` と操作 `plan` / `apply` は必須。
 
-## Install
+| value | command line | environment |
+| --- | --- | --- |
+| environment | `--environment` | `MOI_ENVIRONMENT` |
+| folder name | `--folder-name` | `MOI_FOLDER_NAME` |
+| source | `--source` | `MOI_SOURCE` |
 
-`install.sh` には `curl`, その後の `moi` 実行には `python3` が必要.
-source が `https://` の場合は `git` も必要.
+## 仕組み
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh \
-  | MOI_ENVIRONMENT=host bash -s -- apply
-```
+実行は次の流れ。
 
-これは `moi` をインストールして, `~/.config/moi/config.toml` を作成し, そのまま全モジュールをapplyする.
-変更内容だけ確認する場合:
+1. `install.sh` が launcher の `moi.sh` をダウンロードし、`~/.local/bin/moi` に配置する
+2. `moi` が設定から source, folder, environment を決める
+3. source が `https://` の場合は一時ディレクトリへ clone し、`file:///` の場合はその checkout を使う
+4. `scripts/moi.py` が `<folder>/<environment>/modules/*/module.toml` を読み、plan または apply を実行する
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh \
-  | MOI_ENVIRONMENT=host bash -s -- plan
-```
-
-## Usage
-
-```sh
-moi [--environment ENV] [--folder-name NAME] [--source SOURCE] plan [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
-moi [--environment ENV] [--folder-name NAME] [--source SOURCE] apply [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
-```
-
-`plan` は予定されるモジュール, パッケージ, ファイル, コマンドを表示するだけで変更しない.
-`apply` はそれらを実際に適用する.
-
-モジュールを省略するとすべてを対象にする.
-指定した場合は、そのモジュールと `depends_on` の依存先を対象にする.
-
-対象 platform は `/etc/os-release` から自動判定する.
-確認時は明示指定できる.
-
-```sh
-moi plan --platform arch
-moi plan --platform debian
-```
-
-手動の後続作業は `install.sh` 経由の初回導入では自動表示される.
-通常の `moi plan` / `moi apply` では表示しない.
-必要な場合は明示指定する.
-
-```sh
-moi plan --show-followups
-moi apply --show-followups
-```
-
-編集中のローカルcheckoutをそのまま実行する場合はlauncherを経由しない.
-
-```sh
-MOI_ENVIRONMENT=host MOI_SOURCE=file:///$PWD ./scripts/plan.sh [module ...]
-MOI_ENVIRONMENT=host MOI_SOURCE=file:///$PWD ./scripts/apply.sh [module ...]
-```
+`moi` は通常、実行時に launcher 自身を更新する。
+source が `https://` の場合、一時 clone は実行後に削除する。
 
 ## applyの範囲
 
