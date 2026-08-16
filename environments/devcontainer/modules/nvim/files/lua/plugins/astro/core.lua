@@ -33,7 +33,7 @@ return {
         expandtab = true,
         guicursor = "c-i:hor20",
         linebreak = false,
-        relativenumber = false,
+        relativenumber = true,
         number = true,
         shiftwidth = 2,
         spell = false,

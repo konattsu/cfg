@@ -29,10 +29,22 @@
           "type": "git",
           "style": "powerline",
           "foreground": "#C8C3DC",
-          "template": " {{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} *{{ .Working.String }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} +{{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} stash:{{ .StashCount }}{{ end }}",
+          "template": " {{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }}  {{ .Working.String }}{{ end }}{{ if .Staging.Changed }}  {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }}  {{ .StashCount }}{{ end }}",
           "options": {
             "fetch_status": true,
             "fetch_upstream_icon": false
+          }
+        },
+        {
+          "type": "battery",
+          "style": "powerline",
+          "foreground": "#FFF",
+          "template": "{{ if not .Error }} {{ if le .Percentage 10.0 }}<#E6325F>{{ .Icon }}{{ .Percentage }}%</>{{ else if le .Percentage 20.0 }}<#FFD728>{{ .Icon }}{{ .Percentage }}%</>{{ else }}<d>{{ .Icon }}{{ .Percentage }}%</d>{{ end }}{{ end }}",
+          "options": {
+            "discharging_icon": "",
+            "charging_icon": "󰂄",
+            "charged_icon": "",
+            "not_charging_icon": ""
           }
         },
         {
@@ -53,7 +65,7 @@
           "foreground": "#FFF",
           "template": " <d>{{ .FormattedMs }}</d>",
           "options": {
-            "always_enabled": true
+            "threshold": 500
           }
         }
       ]

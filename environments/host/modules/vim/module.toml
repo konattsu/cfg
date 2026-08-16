@@ -1,0 +1,12 @@
+name = "vim"
+
+
+[packages]
+apt = ["vim"]
+pacman = ["vim"]
+
+
+[[files]]
+src = "files/vimrc"
+dst = "~/.vimrc"
+mode = "644"
