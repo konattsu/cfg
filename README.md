@@ -4,22 +4,22 @@ Linux(Debian/Arch) 用の環境をセットアップする repo
 
 ## Install
 
-`install.sh` には `curl`, その後の `moi` 実行には `python3` が必要.
-source が `https://` の場合は `git` も必要.
+`install.sh` には `curl` が必要.
+source が `https://` の場合は `moi` 実行時に `git` も必要.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh \
   | MOI_ENVIRONMENT=host bash -s -- apply
 ```
 
-これは launcher を `~/.local/bin/moi` に配置し、`~/.config/moi/config.toml` を作成して、全モジュールを apply する。
+これは GitHub Releases の latest から環境に合う `moi` binary を `~/.local/bin/moi` に配置し、`~/.config/moi/config.toml` を作成して、全モジュールを apply する。
 変更内容だけ確認する場合は `plan` を使う。
 
 ## Usage
 
 ```sh
-moi [--environment ENV] [--folder-name NAME] [--source SOURCE] plan [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
-moi [--environment ENV] [--folder-name NAME] [--source SOURCE] apply [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
+moi [--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] plan [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
+moi [--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] apply [--platform auto|debian|arch] [--show-followups|--no-followups] [--ignore-unless] [module ...]
 ```
 
 `plan` は予定されるモジュール, パッケージ, ファイル, コマンドを表示するだけで変更しない.
@@ -34,12 +34,18 @@ moi plan --platform arch
 moi plan --platform debian
 ```
 
+`--environment`, `--folder-name`, `--source`, `--quiet`, `-v` / `--verbose` は command の前後どちらにも置ける。
+`--quiet` は通常出力を抑制する。`-v` / `--verbose` は診断出力を増やす。
+`apply --ignore-unless` は `commands.unless` を評価せず `commands.run` を実行する。
+
 編集中のローカル checkout をそのまま実行する場合:
 
 ```sh
 MOI_ENVIRONMENT=host MOI_SOURCE=file:///$PWD ./scripts/plan.sh [module ...]
 MOI_ENVIRONMENT=host MOI_SOURCE=file:///$PWD ./scripts/apply.sh [module ...]
 ```
+
+`scripts/plan.sh` / `scripts/apply.sh` は `MOI_SOURCE` が未指定なら現在の checkout を使う。
 
 ## 設定
 
@@ -65,12 +71,11 @@ default_source = "https://github.com/konattsu/moi.git"
 
 実行は次の流れ。
 
-1. `install.sh` が launcher の `moi.sh` をダウンロードし、`~/.local/bin/moi` に配置する
+1. `install.sh` が GitHub Releases の latest から `moi` binary をダウンロードし、`~/.local/bin/moi` に配置する
 2. `moi` が設定から source, folder, environment を決める
 3. source が `https://` の場合は一時ディレクトリへ clone し、`file:///` の場合はその checkout を使う
-4. `scripts/moi.py` が `<folder>/<environment>/modules/*/module.toml` を読み、plan または apply を実行する
+4. `moi` が `<folder>/<environment>/modules/*/module.toml` を読み、plan または apply を実行する
 
-`moi` は通常、実行時に launcher 自身を更新する。
 source が `https://` の場合、一時 clone は実行後に削除する。
 
 ## applyの範囲

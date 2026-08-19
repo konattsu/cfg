@@ -1,2 +1,4 @@
 __pycache__/
 nvim.log
+/target
+/logs

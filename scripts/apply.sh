@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
-exec python3 scripts/moi.py apply "$@"
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+export MOI_SOURCE="${MOI_SOURCE:-file://$repo_root}"
+
+cd "$repo_root"
+if [[ -x "$repo_root/target/debug/moi" ]]; then
+  exec "$repo_root/target/debug/moi" apply "$@"
+fi
+
+exec cargo run --quiet -- apply "$@"
