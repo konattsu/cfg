@@ -9,8 +9,33 @@ permissions:
   contents: read
 
 jobs:
+  validate-version:
+    name: validate version tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Validate tag matches Cargo.toml version
+        run: |
+          version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "moi") | .version')"
+          expected="v${version}"
+
+          if [ "${{ github.ref_name }}" != "$expected" ]; then
+            echo "tag must match Cargo.toml version"
+            echo "tag:      ${{ github.ref_name }}"
+            echo "expected: $expected"
+            exit 1
+          fi
+
   build-release:
     name: build ${{ matrix.target }}
+    needs:
+      - validate-version
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -63,6 +88,11 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -72,6 +102,7 @@ jobs:
       - name: Publish GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
