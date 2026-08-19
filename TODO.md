@@ -9,3 +9,5 @@
 - Neo-treeの横幅はリサイズ後と閉じる直前にNeovim stateへ保存し、再表示時や次回起動時に同じ幅へ戻す。 再表示直後に既存windowへ入った場合も保存幅へ戻す。Neo-treeだけが残って全画面幅になった状態は保存しない。
 - nvim系設定たくさんあるので見てみる
 - neotreeでsymlink分からない
+- moiのself-update
+- oh my poshでgitの情報見れるが視覚情報圧迫するのでwslみたいに圧縮検討

@@ -51,7 +51,7 @@
           "type": "os",
           "style": "powerline",
           "foreground": "#EEE",
-          "template": " <d>{{ .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ if .WSL }}#{{ else }}.{{ end }}</d>"
+          "template": " <d>{{ if .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ else }}.{{ end }}{{ if .WSL }}#{{ else }}.{{ end }}</d>"
         },
         {
           "type": "time",
