@@ -36,6 +36,30 @@ ZSH_HIGHLIGHT_STYLES[redirection]='fg=#92F3A4'
 
 # --- Prompt (oh-my-posh) ---
 export PATH="$HOME/.local/bin:$PATH"
+
+# Identify the container from within the running container context
+unset POSH_DISTRO_ID
+if [[ -r /etc/os-release ]]; then
+  POSH_DISTRO_ID="$(. /etc/os-release 2>/dev/null; printf '%s' "${ID:-}")"
+  case "$POSH_DISTRO_ID" in
+    debian | arch)
+      export POSH_DISTRO_ID
+      ;;
+    *)
+      unset POSH_DISTRO_ID
+      ;;
+  esac
+fi
+
+unset POSH_CONTAINER_KIND POSH_CONTAINER_KIND_SYMBOL
+# Add other verified runtimes here when needed, for example: podman, lxc, systemd-nspawn.
+if [[ -f /.dockerenv ]] || grep -qa 'docker' /proc/1/cgroup 2>/dev/null; then
+  export POSH_CONTAINER_KIND=docker
+  export POSH_CONTAINER_KIND_SYMBOL=d
+else
+  export POSH_CONTAINER_KIND_SYMBOL=.
+fi
+
 eval "$(oh-my-posh init zsh --config ~/.poshthemes/my_theme.omp.json)"
 
 # --- Options ---

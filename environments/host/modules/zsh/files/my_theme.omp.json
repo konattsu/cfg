@@ -11,8 +11,8 @@
         {
           "type": "session",
           "style": "powerline",
-          "foreground": "#CDA5FF",
-          "template": "{{ .UserName }}@{{ .HostName }}"
+          "foreground": "#EEE",
+          "template": "<d>{{ .UserName }}</d>"
         },
         {
           "type": "path",
@@ -38,7 +38,7 @@
         {
           "type": "battery",
           "style": "powerline",
-          "foreground": "#FFF",
+          "foreground": "#EEE",
           "template": "{{ if not .Error }} {{ if le .Percentage 10.0 }}<#E6325F>{{ .Icon }}{{ .Percentage }}%</>{{ else if le .Percentage 20.0 }}<#FFD728>{{ .Icon }}{{ .Percentage }}%</>{{ else }}<d>{{ .Icon }}{{ .Percentage }}%</d>{{ end }}{{ end }}",
           "options": {
             "discharging_icon": "",
@@ -50,19 +50,19 @@
         {
           "type": "os",
           "style": "powerline",
-          "foreground": "#FFF",
-          "template": " <d>{{ if .WSL }}wsl{{ end }}</d>"
+          "foreground": "#EEE",
+          "template": " <d>{{ .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ if .WSL }}#{{ else }}.{{ end }}</d>"
         },
         {
           "type": "time",
           "style": "powerline",
-          "foreground": "#FFF",
+          "foreground": "#EEE",
           "template": " <d>{{ .CurrentDate | date .Format }}</d>"
         },
         {
           "type": "executiontime",
           "style": "powerline",
-          "foreground": "#FFF",
+          "foreground": "#EEE",
           "template": " <d>{{ .FormattedMs }}</d>",
           "options": {
             "threshold": 500
