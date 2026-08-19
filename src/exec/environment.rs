@@ -18,15 +18,12 @@ impl ExecutionEnv {
             return Ok(());
         }
 
-        let mut values = paths
+        let mut values: Vec<std::path::PathBuf> = paths
             .iter()
-            .map(|path| {
-                crate::path::expand_home(path)
-                    .map(|path| path.to_string_lossy().to_string())
-            })
-            .collect::<std::result::Result<Vec<_>, crate::error::MoiError>>()?;
-        values.push(self.path.clone());
-        self.path = std::env::join_paths(values.iter().map(std::path::Path::new))
+            .map(|path| crate::path::expand_home(path))
+            .collect::<std::result::Result<_, crate::error::MoiError>>()?;
+        values.extend(std::env::split_paths(&self.path));
+        self.path = std::env::join_paths(values)
             .map_err(|error| crate::error::MoiError::config(error.to_string()))?
             .to_string_lossy()
             .to_string();
@@ -43,5 +40,38 @@ impl ExecutionEnv {
 
     pub(in crate::exec) fn apply_to(&self, command: &mut std::process::Command) {
         command.env("PATH", &self.path);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_path_prepend_preserves_existing_path_segments() {
+        let module: crate::model::Module = toml::from_str(
+            r#"
+name = "test"
+
+[env]
+path_prepend = ["/opt/bin"]
+"#,
+        )
+        .unwrap();
+        let mut env = ExecutionEnv {
+            path: "/usr/local/bin:/usr/bin".to_string(),
+        };
+
+        env.apply_module_env(&module).unwrap();
+
+        let paths = std::env::split_paths(env.path()).collect::<Vec<_>>();
+        assert_eq!(
+            paths,
+            [
+                std::path::PathBuf::from("/opt/bin"),
+                std::path::PathBuf::from("/usr/local/bin"),
+                std::path::PathBuf::from("/usr/bin"),
+            ]
+        );
     }
 }
