@@ -69,6 +69,11 @@ pub(crate) struct ApplyArgs {
     pub(crate) run: RunArgs,
     #[arg(long, help = "Run commands without evaluating their unless guards")]
     pub(crate) ignore_unless: bool,
+    #[arg(
+        long,
+        help = "Upgrade system packages before installing missing packages"
+    )]
+    pub(crate) upgrade_packages: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
@@ -177,5 +182,15 @@ mod tests {
             super::Cli::try_parse_from(["moi", "--quiet", "-v", "plan"]).unwrap_err();
 
         assert_eq!(error.kind(), clap::error::ErrorKind::ArgumentConflict);
+    }
+
+    #[test]
+    fn test_parse_upgrade_packages() {
+        let cli = super::Cli::parse_from(["moi", "apply", "--upgrade-packages"]);
+        let super::Command::Apply(args) = cli.command else {
+            panic!("expected apply command");
+        };
+
+        assert!(args.upgrade_packages);
     }
 }

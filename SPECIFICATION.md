@@ -51,7 +51,7 @@ clone 済み repo で使う local wrapper:
 
 ```sh
 ./scripts/plan.sh [--quiet|-v...] [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
-./scripts/apply.sh [--quiet|-v...] [--platform auto|debian|arch] [--show-followups|--no-followups] [--ignore-unless] [module ...]
+./scripts/apply.sh [--quiet|-v...] [--platform auto|debian|arch] [--show-followups|--no-followups] [--ignore-unless] [--upgrade-packages] [module ...]
 ```
 
 local wrapper は `MOI_SOURCE` が未指定なら現在の checkout を `file://` source として使う。`target/debug/moi` があればそれを実行し、なければ `cargo run` を実行する。
@@ -179,15 +179,16 @@ Debian:
 
 ```sh
 sudo apt update
-sudo apt upgrade -y
 sudo apt install -y <packages...>
 ```
 
 Arch:
 
 ```sh
-sudo pacman -Syu --needed --noconfirm <packages...>
+sudo pacman -S --needed --noconfirm <packages...>
 ```
+
+`apply --upgrade-packages` を指定した場合、Debian では `sudo apt upgrade -y` を実行してから install する。Arch では `pacman -S` の代わりに `pacman -Syu` を使う。
 
 `plan` は package 名を表示するだけで package manager command を実行しない。
 

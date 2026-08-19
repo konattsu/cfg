@@ -25,6 +25,7 @@ pub fn run(cli: crate::cli::Cli) -> std::result::Result<(), crate::error::MoiErr
             platform,
             show_followups,
             args.ignore_unless,
+            args.upgrade_packages,
         ),
     }
 }
@@ -147,10 +148,17 @@ fn apply(
     platform: crate::platform::Platform,
     show_followups: bool,
     ignore_unless: bool,
+    upgrade_packages: bool,
 ) -> std::result::Result<(), crate::error::MoiError> {
     let mut env = crate::exec::environment::ExecutionEnv::new();
     let packages = collect_packages(modules, platform);
-    crate::exec::package::install(&packages, platform, repo_root, &env)?;
+    crate::exec::package::install(
+        &packages,
+        platform,
+        repo_root,
+        &env,
+        upgrade_packages,
+    )?;
     for module in modules {
         crate::output!("==> {}", module.name());
         env.apply_module_env(module)?;

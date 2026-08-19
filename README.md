@@ -19,7 +19,7 @@ curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh \
 
 ```sh
 moi [--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] plan [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
-moi [--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] apply [--platform auto|debian|arch] [--show-followups|--no-followups] [--ignore-unless] [module ...]
+moi [--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] apply [--platform auto|debian|arch] [--show-followups|--no-followups] [--ignore-unless] [--upgrade-packages] [module ...]
 ```
 
 `plan` は予定されるモジュール, パッケージ, ファイル, コマンドを表示するだけで変更しない.
@@ -37,6 +37,7 @@ moi plan --platform debian
 `--environment`, `--folder-name`, `--source`, `--quiet`, `-v` / `--verbose` は command の前後どちらにも置ける。
 `--quiet` は通常出力を抑制する。`-v` / `--verbose` は診断出力を増やす。
 `apply --ignore-unless` は `commands.unless` を評価せず `commands.run` を実行する。
+`apply --upgrade-packages` は package install 前に system package upgrade も実行する。既定では upgrade しない。
 
 編集中のローカル checkout をそのまま実行する場合:
 
