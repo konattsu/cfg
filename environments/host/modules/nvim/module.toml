@@ -294,6 +294,11 @@ dst = "~/.config/nvim/lua/plugins/rainbow-delimiters.lua"
 mode = "644"
 
 [[files]]
+src = "files/lua/plugins/surround.lua"
+dst = "~/.config/nvim/lua/plugins/surround.lua"
+mode = "644"
+
+[[files]]
 src = "files/lua/plugins/treesitter.lua"
 dst = "~/.config/nvim/lua/plugins/treesitter.lua"
 mode = "644"

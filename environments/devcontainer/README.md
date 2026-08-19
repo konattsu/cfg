@@ -34,6 +34,42 @@ printf '%s\n' '.devcontainer/' >> .git/info/exclude
 既に `.devcontainer` が repository に含まれている場合は、`.git/info/exclude` では tracked file の変更を隠せない。
 その場合は共有設定を触らず、devcontainer 内で手動実行する。
 
+## SSH agent / commit signing
+
+Git の commit signing や private repository access に host 側の `ssh-agent` / `keychain` を使う場合、agent socket の mount は devcontainer 作成時に決まる。
+そのため、devcontainer 起動後にこの environment を `curl ... | bash` で入れても、後から host の agent socket を container に追加することはできない。
+
+VS Code Dev Containers など、client が SSH agent forwarding を自動で行う場合はそれを使う。
+この場合、host 側で `SSH_AUTH_SOCK` が client に見えている必要があるため、`keychain` を読んだ shell から `code` / `devcontainer` を起動する。
+
+client の自動 forwarding が使えない project では、project 側の devcontainer 設定に agent forwarding を入れてもらう必要がある。
+Docker Compose を使っている場合の例:
+
+```yaml
+services:
+  app:
+    volumes:
+      - ${SSH_AUTH_SOCK}:/tmp/ssh-agent.sock
+    environment:
+      SSH_AUTH_SOCK: /tmp/ssh-agent.sock
+```
+
+`devcontainer.json` だけで構成されている場合の例:
+
+```jsonc
+{
+  "mounts": [
+    "source=${localEnv:SSH_AUTH_SOCK},target=/tmp/ssh-agent.sock,type=bind"
+  ],
+  "containerEnv": {
+    "SSH_AUTH_SOCK": "/tmp/ssh-agent.sock"
+  }
+}
+```
+
+ただし、既に repository で管理されている `.devcontainer` を個人設定として変更してはいけない project では、この設定を自分の clone だけに安全に足す標準的な local override はない。
+その場合は project に汎用的な SSH agent forwarding 設定を入れる、client の自動 forwarding を使う、または devcontainer 外で署名が必要な Git 操作を行う。
+
 ## Modules
 
 `nvim`, `zsh`, `lazygit` と、それらを host と同じ定義のまま使うために必要な依存 module を含めている。
