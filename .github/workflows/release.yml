@@ -1,45 +1,16 @@
-name: Rust
+name: Release
 
 on:
   push:
-    branches:
-      - main
     tags:
       - '*'
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: read
 
 jobs:
-  ci:
-    name: fmt, clippy, test
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust components
-        run: rustup component add rustfmt clippy
-
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings -D clippy::all
-
-      - name: Run tests
-        env:
-          RUSTFLAGS: -Dwarnings
-        run: cargo test --all-targets --all-features
-
   build-release:
     name: build ${{ matrix.target }}
-    if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -84,9 +55,7 @@ jobs:
 
   release:
     name: publish release
-    if: github.event_name == 'push' && github.ref_type == 'tag'
     needs:
-      - ci
       - build-release
     runs-on: ubuntu-latest
     timeout-minutes: 15
