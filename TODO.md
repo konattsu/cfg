@@ -10,4 +10,4 @@
 - nvim系設定たくさんあるので見てみる
 - neotreeでsymlink分からない
 - moiのself-update
-- oh my poshでgitの情報見れるが視覚情報圧迫するのでwslみたいに圧縮検討
+- moi moi (self-remove)

@@ -11,8 +11,14 @@
         {
           "type": "session",
           "style": "powerline",
-          "foreground": "#EEE",
+          "foreground": "#BBB",
           "template": "<d>{{ .UserName }}</d>"
+        },
+        {
+          "type": "os",
+          "style": "powerline",
+          "foreground": "#BBB",
+          "template": "<d>.{{ if .WSL }}w{{ else }}{{ if .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ else }}.{{ end }}{{ end }}</d>"
         },
         {
           "type": "path",
@@ -29,7 +35,7 @@
           "type": "git",
           "style": "powerline",
           "foreground": "#C8C3DC",
-          "template": " {{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }}  {{ .Working.String }}{{ end }}{{ if .Staging.Changed }}  {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }}  {{ .StashCount }}{{ end }}",
+          "template": " {{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} {{ .Working.String }}{{ end }}{{ if .Staging.Changed }}s{{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} *{{ .StashCount }}{{ end }}",
           "options": {
             "fetch_status": true,
             "fetch_upstream_icon": false
@@ -38,7 +44,7 @@
         {
           "type": "battery",
           "style": "powerline",
-          "foreground": "#EEE",
+          "foreground": "#BBB",
           "template": "{{ if not .Error }} {{ if le .Percentage 10.0 }}<#E6325F>{{ .Icon }}{{ .Percentage }}%</>{{ else if le .Percentage 20.0 }}<#FFD728>{{ .Icon }}{{ .Percentage }}%</>{{ else }}<d>{{ .Icon }}{{ .Percentage }}%</d>{{ end }}{{ end }}",
           "options": {
             "discharging_icon": "",
@@ -48,21 +54,15 @@
           }
         },
         {
-          "type": "os",
-          "style": "powerline",
-          "foreground": "#EEE",
-          "template": " <d>{{ if .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ else }}.{{ end }}{{ if .WSL }}#{{ else }}.{{ end }}</d>"
-        },
-        {
           "type": "time",
           "style": "powerline",
-          "foreground": "#EEE",
+          "foreground": "#BBB",
           "template": " <d>{{ .CurrentDate | date .Format }}</d>"
         },
         {
           "type": "executiontime",
           "style": "powerline",
-          "foreground": "#EEE",
+          "foreground": "#BBB",
           "template": " <d>{{ .FormattedMs }}</d>",
           "options": {
             "threshold": 500
