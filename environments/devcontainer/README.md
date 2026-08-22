@@ -205,7 +205,7 @@ Neovim 側だけで言語環境を完結させない。
 4. `environments/devcontainer/modules/nvim/files/lua/plugins/lang/<language>.lua` で LSP を有効化する
 5. 保存時 format が必要な filetype だけ `environments/devcontainer/modules/nvim/files/lua/plugins/conform.lua` に追加する
 6. `environments/devcontainer/modules/nvim/module.toml` に追加した Lua file を登録する
-7. `MOI_ENVIRONMENT=devcontainer MOI_SOURCE=file:///$PWD ./scripts/plan.sh --platform debian nvim` で確認する
+7. `moi -e devcontainer --source "file://$PWD" plan --platform debian nvim` で確認する
 
 Go を追加する場合の例。
 

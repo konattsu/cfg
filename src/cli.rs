@@ -12,7 +12,7 @@ pub struct Cli {
 
 #[derive(Debug, clap::Args)]
 pub(crate) struct SettingsArgs {
-    #[arg(long, global = true, help = "Target environment name")]
+    #[arg(short = 'e', long, global = true, help = "Target environment name")]
     pub(crate) environment: Option<String>,
     #[arg(
         long = "folder-name",
@@ -20,7 +20,11 @@ pub(crate) struct SettingsArgs {
         help = "Repository-relative environments folder"
     )]
     pub(crate) folder_name: Option<String>,
-    #[arg(long, global = true, help = "Repository source URL")]
+    #[arg(
+        long,
+        global = true,
+        help = "Repository source URL or file:// local repository path"
+    )]
     pub(crate) source: Option<String>,
 }
 
@@ -49,6 +53,9 @@ pub(crate) enum Command {
     Plan(RunArgs),
     /// Apply planned operations.
     Apply(ApplyArgs),
+    /// Print a shell command that installs moi and runs plan/apply.
+    #[command(name = "install-command")]
+    Install(InstallCommandArgs),
 }
 
 #[derive(Debug, clap::Args)]
@@ -76,6 +83,29 @@ pub(crate) struct ApplyArgs {
     pub(crate) upgrade_packages: bool,
 }
 
+#[derive(Debug, clap::Args)]
+pub(crate) struct InstallCommandArgs {
+    #[arg(
+        long,
+        help = "Base URL or local directory containing the install script"
+    )]
+    pub(crate) install_source: Option<String>,
+    #[arg(long, help = "Install script path relative to --install-source")]
+    pub(crate) install_script: Option<String>,
+    #[arg(
+        value_enum,
+        default_value_t = InstallOperationArg::Apply,
+        help = "Operation passed to the installed moi binary"
+    )]
+    pub(crate) operation: InstallOperationArg,
+    #[arg(
+        trailing_var_arg = true,
+        allow_hyphen_values = true,
+        help = "Arguments passed after the operation"
+    )]
+    pub(crate) args: Vec<String>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
 pub(crate) enum PlatformArg {
     Auto,
@@ -83,20 +113,17 @@ pub(crate) enum PlatformArg {
     Arch,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub(crate) enum InstallOperationArg {
+    Plan,
+    Apply,
+}
+
 impl Cli {
     pub fn stdout_settings(&self) -> crate::util::tracing::StdoutSettings {
         crate::util::tracing::StdoutSettings {
             quiet: self.output.quiet,
             verbose: self.output.verbose,
-        }
-    }
-}
-
-impl Command {
-    pub(crate) fn run_args(&self) -> &RunArgs {
-        match self {
-            Command::Plan(args) => args,
-            Command::Apply(args) => &args.run,
         }
     }
 }
@@ -123,6 +150,15 @@ impl std::fmt::Display for PlatformArg {
     }
 }
 
+impl std::fmt::Display for InstallOperationArg {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            InstallOperationArg::Plan => "plan",
+            InstallOperationArg::Apply => "apply",
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use clap::Parser;
@@ -130,6 +166,13 @@ mod tests {
     #[test]
     fn test_parse_settings_before_command() {
         let cli = super::Cli::parse_from(["moi", "--environment", "host", "plan"]);
+
+        assert_eq!(cli.settings.environment.as_deref(), Some("host"));
+    }
+
+    #[test]
+    fn test_parse_environment_short_flag() {
+        let cli = super::Cli::parse_from(["moi", "-e", "host", "plan"]);
 
         assert_eq!(cli.settings.environment.as_deref(), Some("host"));
     }
@@ -192,5 +235,60 @@ mod tests {
         };
 
         assert!(args.upgrade_packages);
+    }
+
+    #[test]
+    fn test_parse_install_command_defaults_to_apply() {
+        let cli = super::Cli::parse_from([
+            "moi",
+            "install-command",
+            "--environment",
+            "devcontainer",
+        ]);
+        let super::Command::Install(args) = cli.command else {
+            panic!("expected install-command");
+        };
+
+        assert_eq!(cli.settings.environment.as_deref(), Some("devcontainer"));
+        assert_eq!(args.operation, super::InstallOperationArg::Apply);
+        assert_eq!(args.install_script, None);
+    }
+
+    #[test]
+    fn test_parse_install_command_plan_args() {
+        let cli = super::Cli::parse_from([
+            "moi",
+            "install-command",
+            "--environment",
+            "devcontainer",
+            "plan",
+            "--platform",
+            "arch",
+            "nvim",
+        ]);
+        let super::Command::Install(args) = cli.command else {
+            panic!("expected install-command");
+        };
+
+        assert_eq!(args.operation, super::InstallOperationArg::Plan);
+        assert_eq!(args.args, ["--platform", "arch", "nvim"]);
+    }
+
+    #[test]
+    fn test_parse_install_command_apply_args() {
+        let cli = super::Cli::parse_from([
+            "moi",
+            "install-command",
+            "--environment",
+            "devcontainer",
+            "apply",
+            "--upgrade-packages",
+        ]);
+        let super::Command::Install(args) = cli.command else {
+            panic!("expected install-command");
+        };
+
+        assert_eq!(args.operation, super::InstallOperationArg::Apply);
+        assert_eq!(args.args, ["--upgrade-packages"]);
     }
 }

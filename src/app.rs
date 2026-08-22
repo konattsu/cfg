@@ -1,9 +1,62 @@
 pub fn run(cli: crate::cli::Cli) -> std::result::Result<(), crate::error::MoiError> {
+    match &cli.command {
+        crate::cli::Command::Plan(args) => run_plan(&cli.settings, args),
+        crate::cli::Command::Apply(args) => run_apply(&cli.settings, args),
+        crate::cli::Command::Install(args) => run_install_command(&cli.settings, args),
+    }
+}
+
+fn run_plan(
+    settings_args: &crate::cli::SettingsArgs,
+    args: &crate::cli::RunArgs,
+) -> std::result::Result<(), crate::error::MoiError> {
+    let context = prepare_run_context(settings_args, args)?;
+    let ordered_modules = context.ordered_modules();
+    print_plan(&ordered_modules, context.platform, context.show_followups)
+}
+
+fn run_apply(
+    settings_args: &crate::cli::SettingsArgs,
+    args: &crate::cli::ApplyArgs,
+) -> std::result::Result<(), crate::error::MoiError> {
+    let context = prepare_run_context(settings_args, &args.run)?;
+    let ordered_modules = context.ordered_modules();
+    apply(
+        &ordered_modules,
+        context.repo.path(),
+        context.platform,
+        context.show_followups,
+        args.ignore_unless,
+        args.upgrade_packages,
+    )
+}
+
+fn run_install_command(
+    settings_args: &crate::cli::SettingsArgs,
+    args: &crate::cli::InstallCommandArgs,
+) -> std::result::Result<(), crate::error::MoiError> {
+    let settings = crate::config::InstallCommandSettings::resolve(
+        crate::config::InstallCommandOverrides {
+            environment: settings_args.environment.as_deref(),
+            folder_name: settings_args.folder_name.as_deref(),
+            source: settings_args.source.as_deref(),
+            install_source: args.install_source.as_deref(),
+            install_script: args.install_script.as_deref(),
+        },
+    )?;
+    crate::output!("{}", build_install_command(&settings, args));
+    Ok(())
+}
+
+fn prepare_run_context(
+    settings_args: &crate::cli::SettingsArgs,
+    args: &crate::cli::RunArgs,
+) -> std::result::Result<RunContext, crate::error::MoiError> {
     let settings =
         crate::config::Settings::resolve(crate::config::SettingsOverrides {
-            environment: cli.settings.environment.as_deref(),
-            folder_name: cli.settings.folder_name.as_deref(),
-            source: cli.settings.source.as_deref(),
+            environment: settings_args.environment.as_deref(),
+            folder_name: settings_args.folder_name.as_deref(),
+            source: settings_args.source.as_deref(),
         })?;
     settings.write_if_missing()?;
     let repo = RepoCheckout::prepare(settings.source())?;
@@ -13,26 +66,98 @@ pub fn run(cli: crate::cli::Cli) -> std::result::Result<(), crate::error::MoiErr
         .join(settings.environment())
         .join("modules");
     let modules = crate::model::modules::load(&modules_dir)?;
-    let ordered =
-        crate::model::modules::resolve(&modules, &cli.command.run_args().modules)?;
-    let platform = resolve_platform(&cli.command)?;
-    let show_followups = should_show_followups(cli.command.run_args());
-    match &cli.command {
-        crate::cli::Command::Plan(_) => print_plan(&ordered, platform, show_followups),
-        crate::cli::Command::Apply(args) => apply(
-            &ordered,
-            repo.path(),
-            platform,
-            show_followups,
-            args.ignore_unless,
-            args.upgrade_packages,
-        ),
+    let ordered_modules = crate::model::modules::resolve(&modules, &args.modules)?
+        .into_iter()
+        .map(|module| module.name().to_string())
+        .collect();
+    let platform = resolve_platform(args)?;
+    let show_followups = should_show_followups(args);
+    Ok(RunContext {
+        repo,
+        modules,
+        ordered_modules,
+        platform,
+        show_followups,
+    })
+}
+
+fn build_install_command(
+    settings: &crate::config::InstallCommandSettings,
+    args: &crate::cli::InstallCommandArgs,
+) -> String {
+    let script_command = install_script_command(settings);
+    let mut words = vec![args.operation.to_string()];
+    words.extend(args.args.iter().cloned());
+    let forwarded_args = words
+        .iter()
+        .map(|word| shell_word(word))
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    format!(
+        "{} \\\n  | MOI_ENVIRONMENT={} MOI_FOLDER_NAME={} MOI_SOURCE={} bash -s -- {}",
+        script_command,
+        shell_word(settings.environment()),
+        shell_word(settings.folder_name()),
+        shell_word(settings.source()),
+        forwarded_args
+    )
+}
+
+fn install_script_command(settings: &crate::config::InstallCommandSettings) -> String {
+    let script = settings.install_script().trim_start_matches('/');
+    if settings.install_source().starts_with("https://") {
+        let url = format!(
+            "{}/{}",
+            settings.install_source().trim_end_matches('/'),
+            script
+        );
+        return format!("curl -fsSL {}", shell_word(&url));
     }
+
+    let local_source = settings
+        .install_source()
+        .strip_prefix("file://")
+        .unwrap_or_else(|| settings.install_source());
+    let path = std::path::Path::new(local_source).join(script);
+    format!("cat {}", shell_word(&path.display().to_string()))
+}
+
+fn shell_word(value: &str) -> String {
+    if !value.is_empty()
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"_@%+=:,./-".contains(&byte))
+    {
+        return value.to_string();
+    }
+    format!("'{}'", value.replace('\'', "'\"'\"'"))
 }
 
 struct RepoCheckout {
     path: std::path::PathBuf,
     _tempdir: Option<tempfile::TempDir>,
+}
+
+struct RunContext {
+    repo: RepoCheckout,
+    modules: std::collections::BTreeMap<String, crate::model::Module>,
+    ordered_modules: Vec<String>,
+    platform: crate::platform::Platform,
+    show_followups: bool,
+}
+
+impl RunContext {
+    fn ordered_modules(&self) -> Vec<&crate::model::Module> {
+        self.ordered_modules
+            .iter()
+            .map(|name| {
+                self.modules
+                    .get(name)
+                    .expect("resolved module names must exist")
+            })
+            .collect()
+    }
 }
 
 impl RepoCheckout {
@@ -75,9 +200,9 @@ impl RepoCheckout {
 }
 
 fn resolve_platform(
-    command: &crate::cli::Command,
+    args: &crate::cli::RunArgs,
 ) -> std::result::Result<crate::platform::Platform, crate::error::MoiError> {
-    match command.run_args().platform {
+    match args.platform {
         crate::cli::PlatformArg::Auto => crate::platform::detect(),
         crate::cli::PlatformArg::Debian => Ok(crate::platform::Platform::Debian),
         crate::cli::PlatformArg::Arch => Ok(crate::platform::Platform::Arch),

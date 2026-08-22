@@ -47,25 +47,35 @@ MOI_RELEASE_ASSET=moi-<target-triple>
 - `x86_64-unknown-linux-gnu`
 - `aarch64-unknown-linux-gnu`
 
-clone 済み repo で使う local wrapper:
-
-```sh
-./scripts/plan.sh [--quiet|-v...] [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
-./scripts/apply.sh [--quiet|-v...] [--platform auto|debian|arch] [--show-followups|--no-followups] [--ignore-unless] [--upgrade-packages] [module ...]
-```
-
-local wrapper は `MOI_SOURCE` が未指定なら現在の checkout を `file://` source として使う。`target/debug/moi` があればそれを実行し、なければ `cargo run` を実行する。
-
 直接実行:
 
 ```sh
-moi [--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] plan [options] [module ...]
-moi [--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] apply [options] [module ...]
+moi [-e|--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] plan [options] [module ...]
+moi [-e|--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] apply [options] [module ...]
+moi [--folder-name NAME] [--source SOURCE] [--quiet|-v...] install-command -e|--environment ENV [--install-source URL_OR_PATH] [--install-script PATH] [plan|apply] [arg ...]
 ```
 
-`moi` は `plan` / `apply` のどちらかの操作を必須とする。
-`--environment`, `--folder-name`, `--source`, `--quiet`, `-v` / `--verbose` は command の前後どちらにも置ける。
+`moi` は `plan` / `apply` / `install-command` のいずれかの subcommand を必須とする。
+`-e` / `--environment`, `--folder-name`, `--source`, `--quiet`, `-v` / `--verbose` は command の前後どちらにも置ける。
 `--quiet` は通常出力を抑制する。`-v` / `--verbose` は診断出力を増やし、複数回指定できる。
+
+`install-command` は install script を取得して `plan` または `apply` を実行する shell command を stdout に表示する。
+出力だけを行い、repository clone、module load、config 自動生成は行わない。
+`install-command` の `-e` / `--environment` は必須で、`MOI_ENVIRONMENT` または config の `default_environment` には fallback しない。
+操作を省略した場合は `apply` を出力する。
+
+default:
+
+```text
+MOI_INSTALL_SOURCE=https://raw.githubusercontent.com/konattsu/moi/main/
+MOI_INSTALL_SCRIPT=install.sh
+```
+
+`--install-source` / `MOI_INSTALL_SOURCE` / `default_install_source` は install script を置く base URL または local directory を表す。
+`https://` で始まる場合は `curl -fsSL` を使う。
+`file://` で始まる場合、または URL でない場合は local path として扱い、`cat` を使う。
+`--install-script` / `MOI_INSTALL_SCRIPT` / `default_install_script` は install source からの相対 path を表す。
+absolute path または `..` を含む path は停止する。
 
 ## Settings
 
@@ -81,19 +91,27 @@ schema:
 default_environment = "host"
 default_folder_name = "environments"
 default_source = "https://github.com/konattsu/moi.git"
+default_install_source = "file:///home/natsu/moi"
+default_install_script = "install.sh"
 ```
 
 設定値は command line argument, environment variable, 設定ファイルの順に解決する。
 
 | value | command line | environment | config |
 | --- | --- | --- | --- |
-| environment | `--environment` | `MOI_ENVIRONMENT` | `default_environment` |
+| environment | `-e`, `--environment` | `MOI_ENVIRONMENT` | `default_environment` |
 | folder_name | `--folder-name` | `MOI_FOLDER_NAME` | `default_folder_name` |
 | source | `--source` | `MOI_SOURCE` | `default_source` |
+| install_source | `--install-source` | `MOI_INSTALL_SOURCE` | `default_install_source` |
+| install_script | `--install-script` | `MOI_INSTALL_SCRIPT` | `default_install_script` |
 
 `environment` が解決できない場合は停止する。
 `folder_name` が解決できない場合は `environments` を使う。
 `source` が解決できない場合は `https://github.com/konattsu/moi.git` を使う。
+`install_source` が解決できない場合は `https://raw.githubusercontent.com/konattsu/moi/main/` を使う。
+`install_script` が解決できない場合は `install.sh` を使う。
+
+`install_source` と `install_script` は config file に書かれていれば読むが、設定ファイルが存在しない場合の自動生成には含めない。
 
 `source` は `https://` または `file:///` で始まらなければ停止する。
 `folder_name` は repository-relative path で、absolute path または `..` を含む場合は停止する。

@@ -1,6 +1,9 @@
 mod defaults {
     pub(super) const FOLDER_NAME: &str = "environments";
     pub(super) const SOURCE: &str = "https://github.com/konattsu/moi.git";
+    pub(super) const INSTALL_SOURCE: &str =
+        "https://raw.githubusercontent.com/konattsu/moi/main/";
+    pub(super) const INSTALL_SCRIPT: &str = "install.sh";
     pub(super) const CONFIG_DIR: &str = ".config/moi";
     pub(super) const CONFIG_FILE: &str = "config.toml";
 }
@@ -19,12 +22,32 @@ pub(crate) struct SettingsOverrides<'a> {
     pub(crate) source: Option<&'a str>,
 }
 
+#[derive(Debug)]
+pub(crate) struct InstallCommandSettings {
+    environment: String,
+    folder_name: String,
+    source: String,
+    install_source: String,
+    install_script: String,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct InstallCommandOverrides<'a> {
+    pub(crate) environment: Option<&'a str>,
+    pub(crate) folder_name: Option<&'a str>,
+    pub(crate) source: Option<&'a str>,
+    pub(crate) install_source: Option<&'a str>,
+    pub(crate) install_script: Option<&'a str>,
+}
+
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ConfigFile {
     default_environment: Option<String>,
     default_folder_name: Option<String>,
     default_source: Option<String>,
+    default_install_source: Option<String>,
+    default_install_script: Option<String>,
 }
 
 #[derive(Debug)]
@@ -32,6 +55,8 @@ struct EnvOverrides {
     environment: Option<String>,
     folder_name: Option<String>,
     source: Option<String>,
+    install_source: Option<String>,
+    install_script: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -120,12 +145,100 @@ impl Settings {
     }
 }
 
+impl InstallCommandSettings {
+    pub(crate) fn resolve(
+        cli: InstallCommandOverrides<'_>,
+    ) -> std::result::Result<Self, crate::error::MoiError> {
+        let config_path = config_path()?;
+        let config = read_config_file(&config_path)?;
+        let env = EnvOverrides::read();
+        let environment = cli
+            .environment
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+            .ok_or_else(|| {
+                crate::error::MoiError::config(
+                    "missing required setting: environment (use --environment / -e)",
+                )
+            })?;
+        let folder_name = validate_folder_name(&resolve_setting(
+            SettingSources {
+                cli: cli.folder_name,
+                env: env.folder_name.as_deref(),
+                file: config.default_folder_name.as_deref(),
+            },
+            "MOI_FOLDER_NAME",
+            "folder_name",
+            Some(defaults::FOLDER_NAME),
+            &config_path,
+        )?)?;
+        let source = validate_source(&resolve_setting(
+            SettingSources {
+                cli: cli.source,
+                env: env.source.as_deref(),
+                file: config.default_source.as_deref(),
+            },
+            "MOI_SOURCE",
+            "source",
+            Some(defaults::SOURCE),
+            &config_path,
+        )?)?;
+        let install_source = validate_install_source(&resolve_setting(
+            SettingSources {
+                cli: cli.install_source,
+                env: env.install_source.as_deref(),
+                file: config.default_install_source.as_deref(),
+            },
+            "MOI_INSTALL_SOURCE",
+            "install_source",
+            Some(defaults::INSTALL_SOURCE),
+            &config_path,
+        )?)?;
+        let install_script = validate_install_script(&resolve_setting(
+            SettingSources {
+                cli: cli.install_script,
+                env: env.install_script.as_deref(),
+                file: config.default_install_script.as_deref(),
+            },
+            "MOI_INSTALL_SCRIPT",
+            "install_script",
+            Some(defaults::INSTALL_SCRIPT),
+            &config_path,
+        )?)?;
+        Ok(Self {
+            environment,
+            folder_name,
+            source,
+            install_source,
+            install_script,
+        })
+    }
+
+    pub(crate) fn environment(&self) -> &str {
+        &self.environment
+    }
+    pub(crate) fn folder_name(&self) -> &str {
+        &self.folder_name
+    }
+    pub(crate) fn source(&self) -> &str {
+        &self.source
+    }
+    pub(crate) fn install_source(&self) -> &str {
+        &self.install_source
+    }
+    pub(crate) fn install_script(&self) -> &str {
+        &self.install_script
+    }
+}
+
 impl EnvOverrides {
     fn read() -> Self {
         Self {
             environment: read_env("MOI_ENVIRONMENT"),
             folder_name: read_env("MOI_FOLDER_NAME"),
             source: read_env("MOI_SOURCE"),
+            install_source: read_env("MOI_INSTALL_SOURCE"),
+            install_script: read_env("MOI_INSTALL_SCRIPT"),
         }
     }
 }
@@ -153,6 +266,16 @@ fn read_config_file(
     validate_optional_string(&config.default_environment, path, "default_environment")?;
     validate_optional_string(&config.default_folder_name, path, "default_folder_name")?;
     validate_optional_string(&config.default_source, path, "default_source")?;
+    validate_optional_string(
+        &config.default_install_source,
+        path,
+        "default_install_source",
+    )?;
+    validate_optional_string(
+        &config.default_install_script,
+        path,
+        "default_install_script",
+    )?;
     Ok(config)
 }
 
@@ -209,6 +332,33 @@ fn validate_source(value: &str) -> std::result::Result<String, crate::error::Moi
     Err(crate::error::MoiError::config(
         "source must start with \"https://\" or \"file:///\"",
     ))
+}
+
+fn validate_install_source(
+    value: &str,
+) -> std::result::Result<String, crate::error::MoiError> {
+    if value.starts_with("https://") || value.starts_with("file://") {
+        return Ok(value.to_string());
+    }
+    let path = std::path::Path::new(value);
+    if path.as_os_str().is_empty() {
+        return Err(crate::error::MoiError::config(
+            "install_source must be a URL or local path",
+        ));
+    }
+    Ok(value.to_string())
+}
+
+fn validate_install_script(
+    value: &str,
+) -> std::result::Result<String, crate::error::MoiError> {
+    let path = std::path::Path::new(value);
+    if path.is_absolute() || path.components().any(|part| part.as_os_str() == "..") {
+        return Err(crate::error::MoiError::config(
+            "install_script must be relative and must not contain ..",
+        ));
+    }
+    Ok(value.trim_matches('/').to_string())
 }
 
 fn validate_folder_name(

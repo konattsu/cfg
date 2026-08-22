@@ -2,55 +2,50 @@
 
 Linux(Debian/Arch) 用の環境をセットアップする repo
 
+いわゆる dotfiles を扱うもの
+
+## 特徴
+
+- 管理対象をモジュール単位で分割できる(例: [modules](environments/host/modules))
+- パッケージ, ファイル, marker block, バイナリ, 任意コマンドをまとめて適用できる
+- 特殊なインストール手順も `module.toml` に寄せられる
+  - 例: debian 環境の github-cli のように, 事前にパッケージマネージャーの更新が必要なもの
+  - `install-gh.sh` のような個別スクリプトと, その呼び出し順序を管理する必要がない
+
 ## Install
 
-`install.sh` には `curl` が必要.
-source が `https://` の場合は `moi` 実行時に `git` も必要.
+実行に `curl`, `git` が必要.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh \
   | MOI_ENVIRONMENT=host bash -s -- apply
 ```
 
-これは GitHub Releases の latest から環境に合う `moi` binary を `~/.local/bin/moi` に配置し、`~/.config/moi/config.toml` を作成して、全モジュールを apply する。
-変更内容だけ確認する場合は `plan` を使う。
+この例は GitHub Releases の latest から環境に合う `moi` binary を `~/.local/bin/moi` に配置し, `host` environment を apply する.
 
 ## Usage
 
-```sh
-moi [--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] plan [--platform auto|debian|arch] [--show-followups|--no-followups] [module ...]
-moi [--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] apply [--platform auto|debian|arch] [--show-followups|--no-followups] [--ignore-unless] [--upgrade-packages] [module ...]
-```
-
-`plan` は予定されるモジュール, パッケージ, ファイル, コマンドを表示するだけで変更しない.
-`apply` はそれらを実際に適用する.
-
-モジュールを省略するとすべてを対象にする。指定した場合は、そのモジュールと `depends_on` の依存先を対象にする.
-
-対象 platform は `/etc/os-release` から自動判定する。確認時は明示指定できる.
+よく使う操作:
 
 ```sh
-moi plan --platform arch
-moi plan --platform debian
+moi -e host plan
+moi -e host apply
+moi -e host apply nvim zsh
 ```
 
-`--environment`, `--folder-name`, `--source`, `--quiet`, `-v` / `--verbose` は command の前後どちらにも置ける。
-`--quiet` は通常出力を抑制する。`-v` / `--verbose` は診断出力を増やす。
-`apply --ignore-unless` は `commands.unless` を評価せず `commands.run` を実行する。
-`apply --upgrade-packages` は package install 前に system package upgrade も実行する。既定では upgrade しない。
+### コマンド
 
-編集中のローカル checkout をそのまま実行する場合:
-
-```sh
-MOI_ENVIRONMENT=host MOI_SOURCE=file:///$PWD ./scripts/plan.sh [module ...]
-MOI_ENVIRONMENT=host MOI_SOURCE=file:///$PWD ./scripts/apply.sh [module ...]
+```txt
+moi [global options] plan [run options] [module ...]
+moi [global options] apply [run options] [apply options] [module ...]
+moi [global options] install-command -e ENV [install options] [plan|apply] [arg ...]
 ```
 
-`scripts/plan.sh` / `scripts/apply.sh` は `MOI_SOURCE` が未指定なら現在の checkout を使う。
+詳細は `--help`.
 
 ## 設定
 
-設定ファイルは `~/.config/moi/config.toml` に置く。
+設定ファイルは `~/.config/moi/config.toml`.
 
 ```toml
 default_environment = "host"
@@ -58,32 +53,34 @@ default_folder_name = "environments"
 default_source = "https://github.com/konattsu/moi.git"
 ```
 
-設定値は command line argument, environment variable, 設定ファイルの順で決まる。
-`default_folder_name` と `default_source` は設定がなければ上記の既定値を使う。
-`environment` と操作 `plan` / `apply` は必須。
+- 設定値: コマンドライン引数, 環境変数, 設定ファイルの順
+- 必須: `environment` と操作(`plan` / `apply`)
+- `default_folder_name` と `default_source` は設定がなければ上記の既定値を使う.
 
-| value | command line | environment |
+| 対象 | コマンドライン | 環境変数 |
 | --- | --- | --- |
-| environment | `--environment` | `MOI_ENVIRONMENT` |
+| environment | `-e`, `--environment` | `MOI_ENVIRONMENT` |
 | folder name | `--folder-name` | `MOI_FOLDER_NAME` |
 | source | `--source` | `MOI_SOURCE` |
 
+`install-command` だけが使う install script の場所は, 必要なら手で設定ファイルに追加する.
+この値は config 自動生成時には書かれない.
+
+```toml
+default_install_source = "file:///home/natsu/moi"
+default_install_script = "install.sh"
+```
+
 ## 仕組み
 
-実行は次の流れ。
+実行の流れ:
 
-1. `install.sh` が GitHub Releases の latest から `moi` binary をダウンロードし、`~/.local/bin/moi` に配置する
+1. `install.sh` が GitHub Releases の latest から `moi` binary をダウンロードし, `~/.local/bin/moi` に配置する
 2. `moi` が設定から source, folder, environment を決める
-3. source が `https://` の場合は一時ディレクトリへ clone し、`file:///` の場合はその checkout を使う
-4. `moi` が `<folder>/<environment>/modules/*/module.toml` を読み、plan または apply を実行する
+3. source が `https://` の場合は一時ディレクトリへ clone し, `file:///` の場合はその checkout を使う
+4. `moi` が `<folder>/<environment>/modules/*/module.toml` を読み, plan または apply を実行する
 
-source が `https://` の場合、一時 clone は実行後に削除する。
-
-## applyの範囲
-
-`apply` は `module.toml` に定義されたディレクトリ, ファイル, marker block, パッケージ, バイナリ, セットアップコマンドを適用する.
-
-SSH秘密鍵, `~/.ssh/allowed_signers`, GitHub login, default shell, docker group membership, keychainに読み込ませる個別の鍵は上書きしない.
+source が `https://` の場合, 一時 clone は実行後に削除する.
 
 ## その他
 
