@@ -18,7 +18,7 @@
           "type": "os",
           "style": "powerline",
           "foreground": "#BBB",
-          "template": "<d>.{{ if .WSL }}w{{ else }}{{ if .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ else }}.{{ end }}{{ end }}</d>"
+          "template": "<d>.{{ if .WSL }}w{{ else }}{{ if .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ .Env.POSH_CONTAINER_KIND_SYMBOL }}{{ else }}.{{ end }}{{ end }}{{ .Env.POSH_DISTRO_ID_SYMBOL }}</d>"
         },
         {
           "type": "path",
