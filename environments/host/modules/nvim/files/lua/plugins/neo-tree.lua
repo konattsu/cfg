@@ -55,6 +55,13 @@ return {
         },
       },
 
+      default_component_configs = {
+        symlink_target = {
+          enabled = true,
+          text_format = " @",
+        },
+      },
+
       filesystem = {
         filtered_items = {
           visible = true,
