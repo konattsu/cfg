@@ -5,7 +5,7 @@
 このリポジトリではNeovim関連を3層に分けて管理する。
 
 - **Neovim**: エディタ本体。moduleで指定した固定versionの公式tarballを展開して
-  `~/.local/share/nvim-linux-x86_64` に配置する。
+  `~/.local/share/nvim` に配置する。
 - **AstroNvimとプラグイン**: Neovim上で動くLuaプラグイン群。`lazy.nvim` と
   `lazy-lock.json` が管理する。
 - **設定**: `environments/host/modules/nvim/files` に置き、`moi apply nvim` で

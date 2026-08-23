@@ -345,17 +345,32 @@ NVIM_VERSION=0.12.4
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 archive="$tmpdir/nvim-linux-x86_64.tar.gz"
+extract_dir="$tmpdir/extract"
 curl -fL "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" -o "$archive"
-rm -rf "$HOME/.local/share/nvim-linux-x86_64"
-tar -xzf "$archive" -C "$HOME/.local/share"
-ln -sf "$HOME/.local/share/nvim-linux-x86_64/bin/nvim" "$HOME/.local/bin/nvim"
+mkdir -p "$extract_dir"
+tar -xzf "$archive" -C "$extract_dir"
+nvim_bin=""
+for candidate in "$extract_dir"/*/bin/nvim; do
+  if [ -x "$candidate" ]; then
+    nvim_bin="$candidate"
+    break
+  fi
+done
+if [ -z "$nvim_bin" ]; then
+  echo "nvim binary not found in archive" >&2
+  exit 1
+fi
+nvim_root="$(dirname "$(dirname "$nvim_bin")")"
+rm -rf "$HOME/.local/share/nvim" "$HOME/.local/share/nvim-linux-x86_64"
+mv "$nvim_root" "$HOME/.local/share/nvim"
+ln -sf "$HOME/.local/share/nvim/bin/nvim" "$HOME/.local/bin/nvim"
 """
 unless = """
 test -x "$HOME/.local/bin/nvim" &&
 "$HOME/.local/bin/nvim" --version >/dev/null 2>&1 &&
 "$HOME/.local/bin/nvim" --version | grep -Eq '^NVIM v0\\.12\\.4($|[^0-9])'
 """
-requires = ["curl", "grep", "ln", "mkdir", "mktemp", "rm", "tar"]
+requires = ["curl", "dirname", "grep", "ln", "mkdir", "mktemp", "mv", "rm", "tar"]
 
 [[commands]]
 platform = "debian"
