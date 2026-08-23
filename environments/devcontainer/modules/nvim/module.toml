@@ -104,6 +104,11 @@ dst = "~/.config/nvim/lua/lazy_setup.lua"
 mode = "644"
 
 [[files]]
+src = "files/lazy-lock.json"
+dst = "~/.config/nvim/lazy-lock.json"
+mode = "644"
+
+[[files]]
 src = "files/lua/plugins/astro/core.lua"
 dst = "~/.config/nvim/lua/plugins/astro/core.lua"
 mode = "644"
@@ -336,10 +341,11 @@ mode = "644"
 [[commands]]
 run = """
 mkdir -p "$HOME/.local/bin"
+NVIM_VERSION=0.12.4
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 archive="$tmpdir/nvim-linux-x86_64.tar.gz"
-curl -fL https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz -o "$archive"
+curl -fL "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" -o "$archive"
 rm -rf "$HOME/.local/share/nvim-linux-x86_64"
 tar -xzf "$archive" -C "$HOME/.local/share"
 ln -sf "$HOME/.local/share/nvim-linux-x86_64/bin/nvim" "$HOME/.local/bin/nvim"
@@ -347,7 +353,7 @@ ln -sf "$HOME/.local/share/nvim-linux-x86_64/bin/nvim" "$HOME/.local/bin/nvim"
 unless = """
 test -x "$HOME/.local/bin/nvim" &&
 "$HOME/.local/bin/nvim" --version >/dev/null 2>&1 &&
-"$HOME/.local/bin/nvim" --version | grep -Eq '^NVIM v0\\.(1[1-9]|[2-9][0-9])'
+"$HOME/.local/bin/nvim" --version | grep -Eq '^NVIM v0\\.12\\.4($|[^0-9])'
 """
 requires = ["curl", "grep", "ln", "mkdir", "mktemp", "rm", "tar"]
 

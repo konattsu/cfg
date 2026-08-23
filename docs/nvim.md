@@ -4,33 +4,25 @@
 
 このリポジトリではNeovim関連を3層に分けて管理する。
 
-- **Neovim**: エディタ本体。公式の最新stable tarballを展開して
+- **Neovim**: エディタ本体。moduleで指定した固定versionの公式tarballを展開して
   `~/.local/share/nvim-linux-x86_64` に配置する。
-- **AstroNvimとプラグイン**: Neovim上で動くLuaプラグイン群。`lazy.nvim` が管理する。
+- **AstroNvimとプラグイン**: Neovim上で動くLuaプラグイン群。`lazy.nvim` と
+  `lazy-lock.json` が管理する。
 - **設定**: `environments/host/modules/nvim/files` に置き、`moi apply nvim` で
   `~/.config/nvim` へコピーする。
 
-AstroNvimは `version = "^6"` とし、6.xのstable releaseを追従する。7.xへの更新は
-明示的にversion指定を変更したときだけ行われる。
+Neovim本体とプラグインは同じ世代で固定する。現在は Neovim `0.12.4` と
+repository管理の `lazy-lock.json` を使う。Neovim `0.13` 系へ移るときは、
+Neovim本体のversionとlockfileを同じ更新作業で変更する。
 
 ## Neovim本体の更新
 
-`moi apply nvim` はNeovim 0.11以上が既にあればインストールを省略する。既存環境の
-Neovimだけを更新する場合は、次のコマンドで公式の最新stable tarballを入れ直す。
+`moi apply nvim` は指定versionのNeovimが既にあればインストールを省略する。
+既存環境のNeovimだけを更新する場合は、module内の `NVIM_VERSION` と `unless`
+のversion判定を変更してから `moi apply nvim` を実行する。
 
 ```sh
-tmpdir="$(mktemp -d)"
-curl -fL \
-  https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz \
-  -o "$tmpdir/nvim-linux-x86_64.tar.gz"
-
-rm -rf "$HOME/.local/share/nvim-linux-x86_64"
-tar -xzf "$tmpdir/nvim-linux-x86_64.tar.gz" -C "$HOME/.local/share"
-ln -sfn \
-  "$HOME/.local/share/nvim-linux-x86_64/bin/nvim" \
-  "$HOME/.local/bin/nvim"
-
-rm -rf "$tmpdir"
+moi apply nvim
 nvim --version
 ```
 
@@ -46,18 +38,27 @@ Neovim内で次を実行する。
 
 AstroNvim本体の更新後に追加の更新が表示される場合は、Neovimを再起動してもう一度
 `:Lazy update` を実行する。更新後は `:checkhealth` を実行し、普段使うfiletypeを
-いくつか開いて確認する。
+いくつか開いて確認する。問題がなければ生成された `~/.config/nvim/lazy-lock.json`
+を module配下のlockfileへ反映する。
 
 ## lockfile
 
-lazy.nvimは `~/.config/nvim/lazy-lock.json` をローカルに生成する。このリポジトリでは
-lockfileを管理・配置しないため、新しい環境ではその時点の最新版がインストールされる。
-既存環境のlockfileは `moi apply nvim` で上書きされず、その環境の更新状態として残る。
+lazy.nvimは `~/.config/nvim/lazy-lock.json` を使ってプラグインのcommitを固定する。
+このリポジトリでは host と devcontainer の module配下に同じ内容のlockfileを置き、
+`moi apply nvim` で `~/.config/nvim/lazy-lock.json` へ配置する。
+
+`pin_plugins` は `nil` のままにし、プラグイン固定はlockfileへ集約する。
+host と devcontainer のlockfileは同じ内容に保つ。現在は devcontainer 側にだけ
+`conform.nvim` のspecがあるため、lockfile更新はplugin specのsupersetである
+devcontainer 側で行う。host 側で生成したlockfileをそのまま反映すると、
+devcontainer 専用pluginのentryが落ちる可能性がある。
 
 ## 通常の更新順序
 
-1. 必要なときだけNeovim本体を更新する。
-2. `:Lazy update` でAstroNvimとプラグインを更新する。
-3. Neovimを再起動し、必要ならもう一度 `:Lazy update` を実行する。
-4. `:checkhealth` と普段使うfiletypeで確認する。
-5. 問題がなければそのまま利用する。lockfileをリポジトリへコピーする必要はない。
+1. Neovim本体を更新する場合は、host/devcontainer両方の `NVIM_VERSION` と `unless` を変更する。
+2. `moi apply nvim` で指定versionのNeovimと既存lockfileを配置する。
+3. `:Lazy update` でAstroNvimとプラグインを更新する。
+4. Neovimを再起動し、必要ならもう一度 `:Lazy update` を実行する。
+5. `:checkhealth` と普段使うfiletypeで確認する。
+6. 問題がなければ `~/.config/nvim/lazy-lock.json` を host/devcontainer両方の
+   `files/lazy-lock.json` へ反映する。
