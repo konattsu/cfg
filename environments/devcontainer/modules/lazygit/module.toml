@@ -21,7 +21,6 @@ mode = "644"
 [[commands]]
 # ref: https://github.com/jesseduffield/lazygit#debian-and-ubuntu
 run = """
-set -euo pipefail
 LAZYGIT_VERSION=$(curl -fsSL "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\\K[^"]*')
 LAZYGIT_ARCH=$(uname -m | sed -e 's/aarch64/arm64/' -e 's/x86_64/x86_64/')
 tmp=$(mktemp -d)

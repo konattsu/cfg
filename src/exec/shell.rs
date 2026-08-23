@@ -18,7 +18,12 @@ pub(in crate::exec) fn run_bash_status(
     env: &crate::exec::environment::ExecutionEnv,
 ) -> std::result::Result<std::process::ExitStatus, crate::error::MoiError> {
     let mut process = std::process::Command::new("bash");
-    process.arg("-c").arg(command).current_dir(cwd);
+    process
+        .arg("-euo")
+        .arg("pipefail")
+        .arg("-c")
+        .arg(command)
+        .current_dir(cwd);
     env.apply_to(&mut process);
 
     let status = process

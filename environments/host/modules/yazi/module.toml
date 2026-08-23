@@ -80,7 +80,6 @@ mode = "644"
 [[commands]]
 platform = "debian"
 run = """
-set -euo pipefail
 mkdir -p "$HOME/.local/bin"
 ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
 """
@@ -90,7 +89,6 @@ requires = ["fdfind", "ln", "mkdir"]
 [[commands]]
 # ref: https://yazi-rs.github.io/docs/installation/#official-binaries
 run = """
-set -euo pipefail
 YAZI_VERSION=$(curl -fsSL "https://api.github.com/repos/sxyazi/yazi/releases/latest" | grep -Po '"tag_name": *"v\\K[^"]*')
 case "$(uname -m)" in
   x86_64) YAZI_TARGET="x86_64-unknown-linux-gnu" ;;

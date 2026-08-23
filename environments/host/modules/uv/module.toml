@@ -13,7 +13,6 @@ mode = "755"
 
 [[commands]]
 run = """
-set -euo pipefail
 curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
 """
 unless = "command -v uv"
