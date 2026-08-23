@@ -356,9 +356,9 @@ if [ -z "$nvim_bin" ]; then
   exit 1
 fi
 nvim_root="$(dirname "$(dirname "$nvim_bin")")"
-rm -rf "$HOME/.local/share/nvim" "$HOME/.local/share/nvim-linux-x86_64"
-mv "$nvim_root" "$HOME/.local/share/nvim"
-ln -sf "$HOME/.local/share/nvim/bin/nvim" "$HOME/.local/bin/nvim"
+rm -rf "$HOME/.local/share/nvim-linux-x86_64"
+mv "$nvim_root" "$HOME/.local/share/nvim-linux-x86_64"
+ln -sf "$HOME/.local/share/nvim-linux-x86_64/bin/nvim" "$HOME/.local/bin/nvim"
 """
 unless = """
 test -x "$HOME/.local/bin/nvim" &&
