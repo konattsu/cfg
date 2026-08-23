@@ -338,7 +338,7 @@ mode = "644"
 
 [[commands]]
 run = """
-mkdir -p "$HOME/.local/bin"
+mkdir -p "$HOME/.local/bin" "$HOME/.local/share"
 NVIM_VERSION=0.12.4
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
