@@ -1,6 +1,7 @@
 #[derive(Debug, clap::Parser)]
 #[command(name = "moi")]
 #[command(about = "moi module planner/applicator")]
+#[command(version)]
 pub struct Cli {
     #[command(flatten)]
     pub(crate) settings: SettingsArgs,
