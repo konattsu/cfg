@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh \
   | MOI_ENVIRONMENT=host bash -s -- apply
 ```
 
-`install.sh` は GitHub Releases の latest から実行中 OS/architecture に合う asset を download し、`MOI_SELF_PATH` に executable file として配置してから実行する。
+`install.sh` は GitHub Releases の latest から実行中 OS/architecture に合う archive と SHA-256 checksum を download し、検証・展開した executable file を `MOI_SELF_PATH` に配置してから実行する。
 
 default:
 
@@ -39,8 +39,10 @@ default:
 MOI_GITHUB_REPOSITORY=konattsu/moi
 MOI_SELF_PATH=~/.local/bin/moi
 MOI_RELEASE_BASE=https://github.com/konattsu/moi/releases/latest/download
-MOI_RELEASE_ASSET=moi-<target-triple>
+MOI_RELEASE_ASSET=moi-<target-triple>.tar.gz
 ```
+
+archive は `moi-<target-triple>/` directory 以下に `moi`, `LICENSE-MIT`, `LICENSE-APACHE`, `THIRD-PARTY-LICENSES.txt` を含む。
 
 対応 target:
 

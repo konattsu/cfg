@@ -21,7 +21,7 @@ curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh \
   | MOI_ENVIRONMENT=host bash -s -- apply
 ```
 
-この例は GitHub Releases の latest から環境に合う `moi` binary を `~/.local/bin/moi` に配置し, `host` environment を apply する.
+この例は GitHub Releases の latest から環境に合う `moi` の archive を取得し, checksum を検証してから binary を `~/.local/bin/moi` に配置し, `host` environment を apply する.
 
 ## Usage
 
@@ -75,7 +75,7 @@ default_install_script = "install.sh"
 
 実行の流れ:
 
-1. `install.sh` が GitHub Releases の latest から `moi` binary をダウンロードし, `~/.local/bin/moi` に配置する
+1. `install.sh` が GitHub Releases の latest から `moi` の archive と checksum をダウンロードし, 検証・展開して `~/.local/bin/moi` に配置する
 2. `moi` が設定から source, folder, environment を決める
 3. source が `https://` の場合は一時ディレクトリへ clone し, `file:///` の場合はその checkout を使う
 4. `moi` が `<folder>/<environment>/modules/*/module.toml` を読み, plan または apply を実行する
@@ -89,3 +89,7 @@ source が `https://` の場合, 一時 clone は実行後に削除する.
   - arch: `curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/scripts/followup-arch.sh | bash -s -- --yes`
 - Neovim本体, AstroNvim, プラグインの更新方法は [docs/nvim.md](docs/nvim.md) を参照
 - モジュール定義の仕様は [SPECIFICATION.md](SPECIFICATION.md) を参照
+
+## License
+
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.

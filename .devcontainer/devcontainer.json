@@ -6,5 +6,7 @@
     "ghcr.io/devcontainers/features/rust:1": {
       "version": "latest"
     }
-  }
+  },
+
+  "postCreateCommand": "bash scripts/install-cargo-about.sh"
 }

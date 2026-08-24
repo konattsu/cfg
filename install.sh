@@ -42,17 +42,34 @@ command -v curl >/dev/null 2>&1 || {
   echo "error: missing required command: curl" >&2
   exit 1
 }
+command -v sha256sum >/dev/null 2>&1 || {
+  echo "error: missing required command: sha256sum" >&2
+  exit 1
+}
+command -v tar >/dev/null 2>&1 || {
+  echo "error: missing required command: tar" >&2
+  exit 1
+}
 
 target="$(target_triple)"
-asset="${MOI_RELEASE_ASSET:-moi-$target}"
+package="moi-$target"
+asset="${MOI_RELEASE_ASSET:-$package.tar.gz}"
 release_base="${MOI_RELEASE_BASE:-https://github.com/$repo/releases/latest/download}"
 url="$release_base/$asset"
 
 mkdir -p "$(dirname "$self_path")"
-tmp="$(mktemp)"
-trap 'rm -f "$tmp"' EXIT
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
 
-curl -fsSL "$url" -o "$tmp"
-install -m 755 "$tmp" "$self_path"
+curl -fsSL "$url" -o "$tmp/$asset"
+curl -fsSL "$url.sha256" -o "$tmp/$asset.sha256"
+
+(
+  cd "$tmp"
+  sha256sum --check --status "$asset.sha256"
+  tar -xzf "$asset"
+)
+
+install -m 755 "$tmp/$package/moi" "$self_path"
 
 MOI_FIRST_INSTALL=1 exec "$self_path" "$@"

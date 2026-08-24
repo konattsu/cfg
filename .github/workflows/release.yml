@@ -93,11 +93,40 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install cargo-about
+        run: scripts/install-cargo-about.sh
+
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
+
+      - name: Generate third-party license notices
+        run: |
+          cargo about generate \
+            --locked \
+            --fail \
+            --config cargo-about/about.toml \
+            --output-file dist/THIRD-PARTY-LICENSES.txt \
+            cargo-about/about.txt.hbs
+
+      - name: Package release assets
+        run: |
+          for target in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
+            package="moi-${target}"
+            package_root="$(mktemp -d)"
+
+            mkdir "${package_root}/${package}"
+            install -m 755 "dist/${package}" "${package_root}/${package}/moi"
+            cp LICENSE-MIT LICENSE-APACHE dist/THIRD-PARTY-LICENSES.txt "${package_root}/${package}/"
+            tar -C "$package_root" -czf "dist/${package}.tar.gz" "$package"
+            (cd dist && sha256sum "${package}.tar.gz" > "${package}.tar.gz.sha256")
+
+            rm -rf "$package_root" "dist/${package}"
+          done
+
+          rm dist/THIRD-PARTY-LICENSES.txt
 
       - name: Publish GitHub Release
         env:
