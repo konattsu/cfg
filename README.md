@@ -67,7 +67,7 @@ default_source = "https://github.com/konattsu/moi.git"
 この値は config 自動生成時には書かれない.
 
 ```toml
-default_install_source = "file:///home/natsu/moi"
+default_install_source = "file:///home/....."
 default_install_script = "install.sh"
 ```
 
