@@ -57,6 +57,8 @@ pub(crate) enum Command {
     /// Print a shell command that installs moi and runs plan/apply.
     #[command(name = "install-command")]
     Install(InstallCommandArgs),
+    /// Upgrade moi to the latest release.
+    Upgrade(UpgradeArgs),
 }
 
 #[derive(Debug, clap::Args)]
@@ -105,6 +107,15 @@ pub(crate) struct InstallCommandArgs {
         help = "Arguments passed after the operation"
     )]
     pub(crate) args: Vec<String>,
+}
+
+#[derive(Debug, clap::Args)]
+pub(crate) struct UpgradeArgs {
+    #[arg(
+        long,
+        help = "Reinstall even when the latest version is already installed"
+    )]
+    pub(crate) force: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
@@ -236,6 +247,26 @@ mod tests {
         };
 
         assert!(args.upgrade_packages);
+    }
+
+    #[test]
+    fn test_parse_upgrade() {
+        let cli = super::Cli::parse_from(["moi", "upgrade"]);
+        let super::Command::Upgrade(args) = cli.command else {
+            panic!("expected upgrade command");
+        };
+
+        assert!(!args.force);
+    }
+
+    #[test]
+    fn test_parse_upgrade_force() {
+        let cli = super::Cli::parse_from(["moi", "upgrade", "--force"]);
+        let super::Command::Upgrade(args) = cli.command else {
+            panic!("expected upgrade command");
+        };
+
+        assert!(args.force);
     }
 
     #[test]

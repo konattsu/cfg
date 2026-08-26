@@ -3,6 +3,7 @@ pub fn run(cli: crate::cli::Cli) -> std::result::Result<(), crate::error::MoiErr
         crate::cli::Command::Plan(args) => run_plan(&cli.settings, args),
         crate::cli::Command::Apply(args) => run_apply(&cli.settings, args),
         crate::cli::Command::Install(args) => run_install_command(&cli.settings, args),
+        crate::cli::Command::Upgrade(args) => crate::upgrade::run(args),
     }
 }
 
@@ -134,17 +135,17 @@ fn shell_word(value: &str) -> String {
     format!("'{}'", value.replace('\'', "'\"'\"'"))
 }
 
-struct RepoCheckout {
-    path: std::path::PathBuf,
-    _tempdir: Option<tempfile::TempDir>,
-}
-
 struct RunContext {
     repo: RepoCheckout,
     modules: std::collections::BTreeMap<String, crate::model::Module>,
     ordered_modules: Vec<String>,
     platform: crate::platform::Platform,
     show_followups: bool,
+}
+
+struct RepoCheckout {
+    path: std::path::PathBuf,
+    _tempdir: Option<tempfile::TempDir>,
 }
 
 impl RunContext {

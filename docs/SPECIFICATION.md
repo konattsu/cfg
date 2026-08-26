@@ -55,9 +55,10 @@ archive は `moi-<target-triple>/` directory 以下に `moi`, `LICENSE-MIT`, `LI
 moi [-e|--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] plan [options] [module ...]
 moi [-e|--environment ENV] [--folder-name NAME] [--source SOURCE] [--quiet|-v...] apply [options] [module ...]
 moi [--folder-name NAME] [--source SOURCE] [--quiet|-v...] install-command -e|--environment ENV [--install-source URL_OR_PATH] [--install-script PATH] [plan|apply] [arg ...]
+moi [--quiet|-v...] upgrade [--force]
 ```
 
-`moi` は `plan` / `apply` / `install-command` のいずれかの subcommand を必須とする。
+`moi` は `plan` / `apply` / `install-command` / `upgrade` のいずれかの subcommand を必須とする。
 `-e` / `--environment`, `--folder-name`, `--source`, `--quiet`, `-v` / `--verbose` は command の前後どちらにも置ける。
 `--quiet` は通常出力を抑制する。`-v` / `--verbose` は診断出力を増やし、複数回指定できる。
 
@@ -65,6 +66,9 @@ moi [--folder-name NAME] [--source SOURCE] [--quiet|-v...] install-command -e|--
 出力だけを行い、repository clone、module load、config 自動生成は行わない。
 `install-command` の `-e` / `--environment` は必須で、`MOI_ENVIRONMENT` または config の `default_environment` には fallback しない。
 操作を省略した場合は `apply` を出力する。
+
+`upgrade` は GitHub Releases の latest tag と実行中の version を比較する。同じ version、または実行中の方が新しい場合は何も変更しない。`--force` を指定すると同じ version でも再インストールする。
+更新時は実行環境用archiveとSHA-256 checksumをdownload・検証し、実行中のbinaryと同じdirectoryに一時fileを作成してからatomicに置換する。旧binaryは保持しない。
 
 default:
 

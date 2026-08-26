@@ -12,7 +12,7 @@ impl ExecutionEnv {
     pub(crate) fn apply_module_env(
         &mut self,
         module: &crate::model::Module,
-    ) -> std::result::Result<(), crate::error::MoiError> {
+    ) -> Result<(), crate::error::MoiError> {
         let paths = module.env().path_prepend();
         if paths.is_empty() {
             return Ok(());
@@ -21,7 +21,7 @@ impl ExecutionEnv {
         let mut values: Vec<std::path::PathBuf> = paths
             .iter()
             .map(|path| crate::path::expand_home(path))
-            .collect::<std::result::Result<_, crate::error::MoiError>>()?;
+            .collect::<Result<_, crate::error::MoiError>>()?;
         values.extend(std::env::split_paths(&self.path));
         self.path = std::env::join_paths(values)
             .map_err(|error| crate::error::MoiError::config(error.to_string()))?

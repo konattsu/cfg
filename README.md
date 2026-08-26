@@ -31,6 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/konattsu/moi/main/install.sh \
 moi -e host plan
 moi -e host apply
 moi -e host apply nvim zsh
+moi upgrade
 ```
 
 ### コマンド
@@ -39,6 +40,7 @@ moi -e host apply nvim zsh
 moi [global options] plan [run options] [module ...]
 moi [global options] apply [run options] [apply options] [module ...]
 moi [global options] install-command -e ENV [install options] [plan|apply] [arg ...]
+moi [global options] upgrade [--force]
 ```
 
 詳細は `--help`.

@@ -23,6 +23,9 @@
     - 但し`pub mod foo`, `pub use foo::Foo`のようにモジュール公開かつ, re-exportの形は避ける
   - だが, `use foo::*`のようなワイルドカードは禁止
 
+`std::result::Result`のような`std::prelude`に含まれるものもフルパス記法しろということではない.
+`std::prelude`に含まれるものはそのまま使ってよい(e.g. Copy, Result, Into, TryFrom, Future, etc.).
+
 ### the range of visibility
 
 - `pub`を使うときは`pub(crate)`, `pub(super)`, `pub(in path)`などより狭い範囲で公開できないか検討する
